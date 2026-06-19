@@ -15,7 +15,7 @@ Stack completa via [Render Blueprint](https://render.com/docs/blueprint-spec):
 | **Web Service** | `analytic-pulse-api` | API Express (pings, auth, alertas) |
 | **Static Site** | `analytic-pulse-web` | Frontend React (proxy `/api` → API) |
 | **PostgreSQL** | `analytic-pulse-db` | Banco de dados |
-| **Cron Job** | `analytic-pulse-cron` | Pings automáticos a cada minuto |
+| **cron-job.org** | (externo, grátis) | Pings automáticos a cada minuto |
 
 ### Passo a passo
 
@@ -24,7 +24,7 @@ Stack completa via [Render Blueprint](https://render.com/docs/blueprint-spec):
 1. Acesse [dashboard.render.com](https://dashboard.render.com).
 2. **New** → **Blueprint**.
 3. Conecte o repositório `VandinDev221/analytic_pulse`.
-4. O Render lê o arquivo [`render.yaml`](render.yaml) e provisiona os 4 recursos.
+4. O Render lê o arquivo [`render.yaml`](render.yaml) e provisiona API, frontend e Postgres.
 5. Aguarde o primeiro deploy (pode levar alguns minutos).
 
 #### 2. Criar as tabelas no banco
@@ -33,17 +33,29 @@ Stack completa via [Render Blueprint](https://render.com/docs/blueprint-spec):
 2. Vá em **Connect** → abra o **PSQL** ou **External connection**.
 3. Cole e execute o conteúdo de [`database/schema.sql`](database/schema.sql).
 
-#### 3. Validar
+#### 3. Configurar pings (cron-job.org)
+
+O Render **não oferece Cron Job gratuito** (~$1/mês mínimo). Use [cron-job.org](https://cron-job.org) (grátis):
+
+1. Render → **analytic-pulse-api** → **Environment** → copie o valor de `CRON_SECRET`.
+2. Em [cron-job.org](https://cron-job.org), crie um job:
+   - **URL:** `https://analytic-pulse-api.onrender.com/api/cron/ping`
+   - **Intervalo:** a cada **1 minuto**
+   - **Header:** `x-cron-secret` = valor do `CRON_SECRET`
+   - **Método:** GET
+
+Isso também mantém a API acordada (free tier entra em sleep após inatividade).
+
+#### 4. Validar
 
 | Teste | URL |
 |-------|-----|
 | Health da API | `https://analytic-pulse-api.onrender.com/health` |
 | Frontend | `https://analytic-pulse-web.onrender.com` |
-| Cron (logs) | Render → **analytic-pulse-cron** → **Logs** |
 
 Crie uma conta no frontend, adicione um monitor e aguarde ~1 minuto para o primeiro ping.
 
-#### 4. Telegram (opcional)
+#### 5. Telegram (opcional)
 
 1. Crie um bot com [@BotFather](https://t.me/BotFather).
 2. Obtenha o **Chat ID** ([@userinfobot](https://t.me/userinfobot)).
@@ -75,9 +87,10 @@ Usuários → analytic-pulse-web.onrender.com (SPA)
                 ▼
            analytic-pulse-api.onrender.com (Express)
                 │
-    ┌───────────┼───────────┐
-    ▼           ▼           ▼
- Postgres    Telegram   Cron Job (1 min)
+    ▼           ▼
+ Postgres    Telegram
+                ▲
+         cron-job.org (1 min)
 ```
 
 O frontend chama `/api` no mesmo domínio — o Render faz proxy para a API. Sem configuração extra de CORS no browser.
@@ -99,11 +112,11 @@ analytic_pulse/
 
 ## Plano gratuito Render — limitações
 
-- **API**: entra em sleep após ~15 min sem tráfego; o cron acorda a cada minuto.
+- **API**: entra em sleep após ~15 min sem tráfego — o cron-job.org acorda a cada minuto.
 - **Postgres free**: expira em 90 dias (migre para Neon ou plano pago antes).
-- **Cron**: 1 execução por minuto no free tier.
+- **Cron no Render**: não tem plano free; use cron-job.org ou pague ~$1/mês no Render.
 
-Para produção séria sem sleep, use plano **Starter** na API (~$7/mês).
+Para produção sem sleep na API, use plano **Starter** (~$7/mês).
 
 ---
 

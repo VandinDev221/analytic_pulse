@@ -1,9 +1,9 @@
-# Render Blueprint — deploy completo em produção
+# Render Blueprint — deploy em produção
 # https://render.com/docs/blueprint-spec
 #
 # Após o deploy:
-# 1. Abra o Postgres no dashboard Render → Connect → copie a URL interna
-# 2. Execute database/schema.sql no SQL shell do banco
+# 1. Execute database/schema.sql no Postgres (analytic-pulse-db → PSQL)
+# 2. Configure pings em https://cron-job.org (ver README)
 # 3. Acesse https://analytic-pulse-web.onrender.com
 
 databases:
@@ -45,11 +45,10 @@ services:
           envVarKey: RENDER_EXTERNAL_URL
 
   # ── Frontend SPA (proxy /api → backend) ─────────────────────────────────────
+  # Static sites não aceitam `region` no Blueprint
   - type: web
     name: analytic-pulse-web
     runtime: static
-    plan: free
-    region: oregon
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
@@ -61,24 +60,5 @@ services:
         source: /*
         destination: /index.html
 
-  # ── Cron: pings a cada minuto ────────────────────────────────────────────────
-  - type: cron
-    name: analytic-pulse-cron
-    runtime: node
-    plan: free
-    region: oregon
-    rootDir: backend
-    schedule: "* * * * *"
-    buildCommand: npm ci
-    startCommand: node scripts/trigger-cron.mjs
-    envVars:
-      - key: CRON_SECRET
-        fromService:
-          type: web
-          name: analytic-pulse-api
-          envVarKey: CRON_SECRET
-      - key: API_URL
-        fromService:
-          type: web
-          name: analytic-pulse-api
-          envVarKey: RENDER_EXTERNAL_URL
+  # Pings automáticos: use cron-job.org (grátis) — ver README.
+  # Render Cron não tem plano free (mín. ~$1/mês).
