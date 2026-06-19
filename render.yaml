@@ -1,16 +1,12 @@
-# Render Blueprint — deploy em produção
+# Render Blueprint — API + Frontend
 # https://render.com/docs/blueprint-spec
 #
+# Postgres NÃO é criado aqui (limite: 1 banco free por workspace no Render).
+# No sync, informe DATABASE_URL do Postgres existente ou use Neon (grátis).
+#
 # Após o deploy:
-# 1. Execute database/schema.sql no Postgres (analytic-pulse-db → PSQL)
+# 1. Execute database/schema.sql no seu Postgres
 # 2. Configure pings em https://cron-job.org (ver README)
-# 3. Acesse https://analytic-pulse-web.onrender.com
-
-databases:
-  - name: analytic-pulse-db
-    plan: free
-    databaseName: analytic_pulse
-    user: analytic_pulse
 
 services:
   # ── API Express ─────────────────────────────────────────────────────────────
@@ -27,13 +23,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromDatabase:
-          name: analytic-pulse-db
-          property: connectionString
+        sync: false
       - key: POSTGRES_URL
-        fromDatabase:
-          name: analytic-pulse-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: CRON_SECRET
@@ -45,7 +37,6 @@ services:
           envVarKey: RENDER_EXTERNAL_URL
 
   # ── Frontend SPA ────────────────────────────────────────────────────────────
-  # Static sites no Render não fazem proxy de POST — chamamos a API diretamente.
   - type: web
     name: analytic-pulse-web
     runtime: static
@@ -62,6 +53,3 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
-
-  # Pings automáticos: use cron-job.org (grátis) — ver README.
-  # Render Cron não tem plano free (mín. ~$1/mês).
