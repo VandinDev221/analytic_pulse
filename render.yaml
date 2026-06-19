@@ -44,18 +44,21 @@ services:
           name: analytic-pulse-web
           envVarKey: RENDER_EXTERNAL_URL
 
-  # ── Frontend SPA (proxy /api → backend) ─────────────────────────────────────
-  # Static sites não aceitam `region` no Blueprint
+  # ── Frontend SPA ────────────────────────────────────────────────────────────
+  # Static sites no Render não fazem proxy de POST — chamamos a API diretamente.
   - type: web
     name: analytic-pulse-web
     runtime: static
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: analytic-pulse-api
+          envVarKey: RENDER_EXTERNAL_URL
     routes:
-      - type: rewrite
-        source: /api/*
-        destination: https://analytic-pulse-api.onrender.com/api/*
       - type: rewrite
         source: /*
         destination: /index.html

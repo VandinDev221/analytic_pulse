@@ -73,6 +73,7 @@ Definidas automaticamente pelo `render.yaml`, exceto onde indicado:
 | `JWT_SECRET` | Gerado pelo Render |
 | `CRON_SECRET` | Gerado pelo Render |
 | `FRONTEND_URL` | URL do static site `analytic-pulse-web` |
+| `VITE_API_URL` | URL da API (build do frontend) |
 | `NODE_ENV` | `production` |
 
 Para ver os segredos: Render → **analytic-pulse-api** → **Environment**.
@@ -83,17 +84,16 @@ Para ver os segredos: Render → **analytic-pulse-api** → **Environment**.
 
 ```
 Usuários → analytic-pulse-web.onrender.com (SPA)
-                │ rewrite /api/*
+                │ fetch direto (POST/GET)
                 ▼
            analytic-pulse-api.onrender.com (Express)
                 │
-    ▼           ▼
- Postgres    Telegram
-                ▲
-         cron-job.org (1 min)
+    ┌───────────┴───────────┐
+    ▼                       ▼
+ Postgres              cron-job.org
 ```
 
-O frontend chama `/api` no mesmo domínio — o Render faz proxy para a API. Sem configuração extra de CORS no browser.
+O frontend chama a API diretamente via `VITE_API_URL`. CORS é configurado com `FRONTEND_URL` na API.
 
 ---
 

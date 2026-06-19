@@ -20,6 +20,8 @@ if (!allowedOrigin && process.env.NODE_ENV === 'production') {
 app.use(cors({
   origin: allowedOrigin || true,
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-cron-secret'],
 }));
 app.use(express.json());
 
