@@ -1,20 +1,10 @@
 import type { Monitor, MonitorMetrics, PingLog } from '../types';
 
-function resolveApiBase(): string {
-  if (import.meta.env.VITE_API_URL) {
-    return `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`;
-  }
-  // Fallback: build sem VITE_API_URL chama o static site e retorna 405 no POST
-  if (import.meta.env.PROD && typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host === 'analytic-pulse-web.onrender.com' || host.endsWith('.onrender.com')) {
-      return 'https://analytic-pulse-api.onrender.com/api';
-    }
-  }
-  return '/api';
-}
+const API_BASE =
+  import.meta.env.VITE_API_URL?.replace(/\/$/, '') ||
+  'https://analytic-pulse-api.onrender.com';
 
-const API = resolveApiBase();
+const API = `${API_BASE}/api`;
 
 function getAuthHeader(): HeadersInit {
   const token = localStorage.getItem('pingpulse_token');
