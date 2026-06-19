@@ -30,19 +30,67 @@ export async function login(email: string, password: string): Promise<{ token: s
   return data;
 }
 
-export async function signup(email: string, password: string): Promise<{ token: string; user: { id: string; email: string } }> {
-  const res = await fetch(`${API}/auth/signup`, {
+export async function sendSignupCode(
+  email: string,
+  password: string
+): Promise<{ message: string; devCode?: string }> {
+  const res = await fetch(`${API}/auth/signup/send-code`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Falha ao cadastrar');
+    throw new Error(err.error || 'Falha ao enviar código');
+  }
+  return res.json();
+}
+
+export async function verifySignup(
+  email: string,
+  code: string
+): Promise<{ token: string; user: { id: string; email: string } }> {
+  const res = await fetch(`${API}/auth/signup/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Código inválido');
   }
   const data = await res.json();
   localStorage.setItem('pingpulse_token', data.token);
   return data;
+}
+
+export async function loginWithGoogle(
+  credential: string
+): Promise<{ token: string; user: { id: string; email: string } }> {
+  const res = await fetch(`${API}/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao entrar com Google');
+  }
+  const data = await res.json();
+  localStorage.setItem('pingpulse_token', data.token);
+  return data;
+}
+
+export async function getAuthConfig(): Promise<{ googleEnabled: boolean }> {
+  const res = await fetch(`${API}/auth/config`);
+  if (!res.ok) return { googleEnabled: false };
+  return res.json();
+}
+
+/** @deprecated use sendSignupCode + verifySignup */
+export async function signup(email: string, password: string): Promise<{ token: string; user: { id: string; email: string } }> {
+  await sendSignupCode(email, password);
+  throw new Error('Verifique o código enviado ao seu e-mail');
 }
 
 export async function getMe(): Promise<{ id: string; email: string; slug: string }> {

@@ -13,9 +13,25 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE IF NOT EXISTS users (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email           VARCHAR(255) UNIQUE NOT NULL,
-  password_hash   VARCHAR(255) NOT NULL,
-  created_at      TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+  password_hash   VARCHAR(255),                      -- NULL para contas só Google
+  google_id       VARCHAR(255) UNIQUE,
+  email_verified  BOOLEAN DEFAULT FALSE,
+  created_at      TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+  CONSTRAINT users_auth_method CHECK (password_hash IS NOT NULL OR google_id IS NOT NULL)
 );
+
+-- Códigos de verificação no cadastro por e-mail
+CREATE TABLE IF NOT EXISTS email_verification_codes (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email         VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  code          VARCHAR(6) NOT NULL,
+  expires_at    TIMESTAMPTZ NOT NULL,
+  created_at    TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_verification_email ON email_verification_codes(email);
+CREATE INDEX IF NOT EXISTS idx_email_verification_expires ON email_verification_codes(expires_at);
 
 
 -- ── 2. Profiles (public user info + slug for status page) ────

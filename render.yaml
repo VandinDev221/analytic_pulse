@@ -36,6 +36,12 @@ services:
         sync: false
       - key: API_PUBLIC_URL
         value: https://analytic-pulse-api.onrender.com
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
 
   # ── Frontend SPA ────────────────────────────────────────────────────────────
   - type: web
@@ -50,6 +56,8 @@ services:
           type: web
           name: analytic-pulse-api
           envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
     routes:
       - type: rewrite
         source: /*
