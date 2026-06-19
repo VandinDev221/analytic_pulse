@@ -9,8 +9,10 @@
 
 /* ── Custom Theme variables ─────────────────────────────────────────────────── */
 :root {
+  color-scheme: dark;
   --bg-base: #09090b;
   --bg-sidebar: #0f0f13;
+  --bg-input: #18181b;
   --border: rgba(255, 255, 255, 0.08);
   --text-primary: #f4f4f5;
   --text-secondary: #a1a1aa;
@@ -331,6 +333,24 @@ body {
   border-color: var(--accent-light);
   background: rgba(255, 255, 255, 0.05);
   box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Native <select> no Windows usa fundo claro por padrão — força tema escuro */
+select.input {
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  cursor: pointer;
+  color-scheme: dark;
+  appearance: auto;
+}
+
+select.input:focus {
+  background-color: #1f1f23;
+}
+
+select.input option {
+  background-color: var(--bg-input);
+  color: var(--text-primary);
 }
 
 /* ── Skeletons ───────────────────────────────────────────────────────────────── */
