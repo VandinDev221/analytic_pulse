@@ -13,6 +13,42 @@ interface NotificationRow {
   whatsapp_api_key?: string;
 }
 
+async function loadSettings(userId: string): Promise<NotificationRow | null> {
+  const result = await query(
+    `SELECT notification_channel, telegram_bot_token, telegram_chat_id,
+            whatsapp_phone, whatsapp_api_key, is_enabled
+     FROM notification_settings WHERE user_id = $1`,
+    [userId]
+  );
+  return result.rows[0] ?? null;
+}
+
+function validateSettings(settings: NotificationRow | null): NotificationRow {
+  if (!settings) {
+    throw new Error('Salve as configurações antes de testar');
+  }
+  if (!settings.is_enabled) {
+    throw new Error('Ative as notificações (checkbox) e salve');
+  }
+
+  const channel = settings.notification_channel || 'telegram';
+
+  if (channel === 'whatsapp') {
+    if (!settings.whatsapp_phone?.trim()) {
+      throw new Error('Informe o número WhatsApp (DDI+DDD+número, ex: 5585999999999)');
+    }
+    if (!settings.whatsapp_api_key?.trim()) {
+      throw new Error('Informe a API Key do CallMeBot. Ative em: wa.me/34644447167');
+    }
+  } else {
+    if (!settings.telegram_bot_token?.trim() || !settings.telegram_chat_id?.trim()) {
+      throw new Error('Informe Bot Token e Chat ID do Telegram');
+    }
+  }
+
+  return settings;
+}
+
 export async function sendAlertNotification(
   userId: string,
   monitorName: string,
@@ -21,16 +57,7 @@ export async function sendAlertNotification(
   statusCode: number | null,
   errorMessage: string | null
 ): Promise<void> {
-  const result = await query(
-    `SELECT notification_channel, telegram_bot_token, telegram_chat_id,
-            whatsapp_phone, whatsapp_api_key, is_enabled
-     FROM notification_settings WHERE user_id = $1`,
-    [userId]
-  );
-
-  const settings: NotificationRow | undefined = result.rows[0];
-  if (!settings?.is_enabled) return;
-
+  const settings = validateSettings(await loadSettings(userId));
   const channel = settings.notification_channel || 'telegram';
   const text = formatAlertMessage(
     monitorName,
@@ -41,17 +68,14 @@ export async function sendAlertNotification(
   );
 
   if (channel === 'whatsapp') {
-    if (!settings.whatsapp_phone || !settings.whatsapp_api_key) return;
     await sendWhatsAppMessage(
-      settings.whatsapp_phone,
-      settings.whatsapp_api_key,
+      settings.whatsapp_phone!,
+      settings.whatsapp_api_key!,
       text
     );
     console.log(`📲 WhatsApp notification sent for monitor: ${monitorName}`);
     return;
   }
-
-  if (!settings.telegram_bot_token || !settings.telegram_chat_id) return;
 
   const timestamp = new Date().toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo',
@@ -67,15 +91,14 @@ export async function sendAlertNotification(
 
   await sendTelegramMessage(
     {
-      bot_token: settings.telegram_bot_token,
-      chat_id: settings.telegram_chat_id,
+      bot_token: settings.telegram_bot_token!,
+      chat_id: settings.telegram_chat_id!,
     },
     html
   );
   console.log(`📲 Telegram notification sent for monitor: ${monitorName}`);
 }
 
-/** @deprecated use sendAlertNotification */
 export async function notifyStatusChange(
   userId: string,
   monitorName: string,
@@ -85,6 +108,8 @@ export async function notifyStatusChange(
   errorMessage: string | null
 ): Promise<void> {
   try {
+    const settings = await loadSettings(userId);
+    if (!settings?.is_enabled) return;
     await sendAlertNotification(
       userId,
       monitorName,
