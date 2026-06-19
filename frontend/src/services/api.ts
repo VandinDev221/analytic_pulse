@@ -84,10 +84,30 @@ export async function createMonitor(payload: Pick<Monitor, 'name' | 'url' | 'met
   return res.json();
 }
 
+export async function updateMonitor(
+  id: string,
+  payload: Pick<Monitor, 'name' | 'url' | 'method' | 'interval_minutes'>
+): Promise<Monitor> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/monitors/${id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao atualizar monitor');
+  }
+  return res.json();
+}
+
 export async function deleteMonitor(id: string): Promise<void> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { method: 'DELETE', headers });
-  if (!res.ok) throw new Error('Failed to delete monitor');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao remover monitor');
+  }
 }
 
 export async function toggleMonitorStatus(id: string, active: boolean): Promise<Monitor> {

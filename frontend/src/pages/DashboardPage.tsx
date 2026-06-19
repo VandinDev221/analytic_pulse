@@ -3,7 +3,7 @@ import { Plus, RefreshCw, Activity, CheckCircle, AlertTriangle, Link2, Radio } f
 import { getMonitors, getMe } from '../services/api';
 import type { Monitor } from '../types';
 import { MonitorCard } from '../components/MonitorCard';
-import { AddMonitorModal } from '../components/AddMonitorModal';
+import { MonitorModal } from '../components/MonitorModal';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
 
@@ -11,6 +11,7 @@ export const DashboardPage: React.FC = () => {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [userSlug, setUserSlug] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -150,6 +151,7 @@ export const DashboardPage: React.FC = () => {
                 monitor={m}
                 onDeleted={id => setMonitors(prev => prev.filter(x => x.id !== id))}
                 onUpdated={updated => setMonitors(prev => prev.map(x => x.id === updated.id ? updated : x))}
+                onEdit={setEditingMonitor}
               />
             </div>
           ))}
@@ -157,9 +159,20 @@ export const DashboardPage: React.FC = () => {
       )}
 
       {showModal && (
-        <AddMonitorModal
+        <MonitorModal
           onClose={() => setShowModal(false)}
-          onCreated={monitor => setMonitors(prev => [monitor, ...prev])}
+          onSaved={monitor => setMonitors(prev => [monitor, ...prev])}
+        />
+      )}
+
+      {editingMonitor && (
+        <MonitorModal
+          monitor={editingMonitor}
+          onClose={() => setEditingMonitor(null)}
+          onSaved={updated => {
+            setMonitors(prev => prev.map(x => x.id === updated.id ? updated : x));
+            setEditingMonitor(null);
+          }}
         />
       )}
     </div>

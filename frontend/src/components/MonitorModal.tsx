@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
 import { X, Globe, Tag, RefreshCw } from 'lucide-react';
-import { createMonitor } from '../services/api';
+import { createMonitor, updateMonitor } from '../services/api';
 import type { Monitor } from '../types';
 
-interface AddMonitorModalProps {
+interface MonitorModalProps {
   onClose: () => void;
-  onCreated: (monitor: Monitor) => void;
+  onSaved: (monitor: Monitor) => void;
+  /** Se informado, abre em modo edição */
+  monitor?: Monitor;
 }
 
-export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({ onClose, onCreated }) => {
-  const [form, setForm] = useState({ name: '', url: '', method: 'GET', interval_minutes: 5 });
+export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, monitor }) => {
+  const isEdit = !!monitor;
+
+  const [form, setForm] = useState({
+    name: monitor?.name ?? '',
+    url: monitor?.url ?? '',
+    method: monitor?.method ?? 'GET',
+    interval_minutes: monitor?.interval_minutes ?? 5,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,11 +35,13 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({ onClose, onCre
     }
     setLoading(true);
     try {
-      const monitor = await createMonitor(form);
-      onCreated(monitor);
+      const saved = isEdit
+        ? await updateMonitor(monitor!.id, form)
+        : await createMonitor(form);
+      onSaved(saved);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao criar monitor.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar monitor.');
     } finally {
       setLoading(false);
     }
@@ -39,11 +50,14 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({ onClose, onCre
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Novo Monitor</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>Adicione uma URL para monitorar</p>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+              {isEdit ? 'Editar Monitor' : 'Novo Monitor'}
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
+              {isEdit ? 'Altere nome, URL ou intervalo' : 'Adicione uma URL para monitorar'}
+            </p>
           </div>
           <button onClick={onClose} className="btn btn-ghost" style={{ padding: 8, width: 34, height: 34 }}>
             <X size={16} />
@@ -51,7 +65,6 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({ onClose, onCre
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Name */}
           <div className="form-group">
             <label className="form-label">
               <Tag size={12} style={{ display: 'inline', marginRight: 4 }} />
@@ -66,7 +79,6 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({ onClose, onCre
             />
           </div>
 
-          {/* URL */}
           <div className="form-group">
             <label className="form-label">
               <Globe size={12} style={{ display: 'inline', marginRight: 4 }} />
@@ -81,7 +93,6 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({ onClose, onCre
             />
           </div>
 
-          {/* Method + Interval row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="form-group">
               <label className="form-label">Método HTTP</label>
@@ -112,11 +123,10 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({ onClose, onCre
             </div>
           )}
 
-          {/* Actions */}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Criando...' : 'Criar Monitor'}
+              {loading ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Criar Monitor'}
             </button>
           </div>
         </form>
@@ -124,3 +134,6 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({ onClose, onCre
     </div>
   );
 };
+
+/** @deprecated use MonitorModal */
+export const AddMonitorModal = MonitorModal;

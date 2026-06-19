@@ -167,6 +167,11 @@ router.patch('/:id', async (req: AuthenticatedRequest, res: Response) => {
     values.push(name);
   }
   if (url !== undefined) {
+    try {
+      new URL(url);
+    } catch {
+      return res.status(400).json({ error: 'Invalid URL format' });
+    }
     fields.push(`url = $${index++}`);
     values.push(url);
   }

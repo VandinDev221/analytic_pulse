@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExternalLink, Trash2, Activity, Clock, ToggleLeft, ToggleRight, ChevronRight } from 'lucide-react';
+import { ExternalLink, Trash2, Activity, Clock, ToggleLeft, ToggleRight, ChevronRight, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Monitor } from '../types';
 import { deleteMonitor, toggleMonitorStatus } from '../services/api';
@@ -8,6 +8,7 @@ interface MonitorCardProps {
   monitor: Monitor;
   onDeleted: (id: string) => void;
   onUpdated: (monitor: Monitor) => void;
+  onEdit: (monitor: Monitor) => void;
 }
 
 function StatusBadge({ status }: { status: Monitor['status'] }) {
@@ -29,7 +30,7 @@ function StatusBadge({ status }: { status: Monitor['status'] }) {
   return <span className="badge badge-unknown">Desconhecido</span>;
 }
 
-export const MonitorCard: React.FC<MonitorCardProps> = ({ monitor, onDeleted, onUpdated }) => {
+export const MonitorCard: React.FC<MonitorCardProps> = ({ monitor, onDeleted, onUpdated, onEdit }) => {
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({ monitor, onDeleted, on
       await deleteMonitor(monitor.id);
       onDeleted(monitor.id);
     } catch (e) {
-      alert('Erro ao remover monitor.');
+      alert(e instanceof Error ? e.message : 'Erro ao remover monitor.');
     } finally {
       setDeleting(false);
     }
@@ -140,6 +141,14 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({ monitor, onDeleted, on
             ? <><ToggleRight size={14} /> Pausar</>
             : <><ToggleLeft size={14} /> Ativar</>
           }
+        </button>
+        <button
+          className="btn btn-ghost"
+          style={{ padding: '6px 12px', fontSize: 12 }}
+          onClick={() => onEdit(monitor)}
+          title="Editar"
+        >
+          <Pencil size={13} /> Editar
         </button>
         <button
           className="btn btn-ghost"
