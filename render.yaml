@@ -32,6 +32,10 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         value: https://analytic-pulse.vercel.app,https://analytic-pulse-web.onrender.com
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: API_PUBLIC_URL
+        value: https://analytic-pulse-api.onrender.com
 
   # ── Frontend SPA ────────────────────────────────────────────────────────────
   - type: web

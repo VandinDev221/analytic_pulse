@@ -5,7 +5,9 @@ import authRouter from './routes/auth';
 import monitorsRouter from './routes/monitors';
 import cronRouter from './routes/cron';
 import statusRouter from './routes/status';
+import telegramRouter from './routes/telegram';
 import { checkDatabase } from './lib/db';
+import { registerTelegramWebhook } from './services/telegramApi';
 
 dotenv.config();
 
@@ -78,6 +80,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/monitors', monitorsRouter);
 app.use('/api/cron', cronRouter);
 app.use('/api/status', statusRouter);
+app.use('/api/telegram', telegramRouter);
 
 // ── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, async () => {
@@ -91,6 +94,8 @@ app.listen(PORT, async () => {
   } else {
     console.log('✅ Database conectado e schema OK');
   }
+
+  await registerTelegramWebhook();
 });
 
 export default app;

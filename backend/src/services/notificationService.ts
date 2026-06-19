@@ -1,22 +1,5 @@
-import axios from 'axios';
 import { query } from '../lib/db';
-
-interface TelegramConfig {
-  bot_token: string;
-  chat_id: string;
-}
-
-/**
- * Sends a Telegram message using the Bot API.
- */
-async function sendTelegramMessage(config: TelegramConfig, text: string): Promise<void> {
-  const url = `https://api.telegram.org/bot${config.bot_token}/sendMessage`;
-  await axios.post(url, {
-    chat_id: config.chat_id,
-    text,
-    parse_mode: 'HTML',
-  });
-}
+import { sendTelegramMessage } from './telegramApi';
 
 /**
  * Notifies the monitor owner if their service status changed.
