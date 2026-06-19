@@ -12,13 +12,22 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ── Middleware ──────────────────────────────────────────────────────────────
-const allowedOrigin = process.env.FRONTEND_URL;
-if (!allowedOrigin && process.env.NODE_ENV === 'production') {
-  console.warn('⚠️  FRONTEND_URL not set — CORS may block browser requests');
+// FRONTEND_URL ou CORS_ORIGINS: uma ou mais URLs separadas por vírgula
+function getAllowedOrigins(): string[] | boolean {
+  const raw = process.env.CORS_ORIGINS || process.env.FRONTEND_URL;
+  if (!raw?.trim()) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('⚠️  FRONTEND_URL / CORS_ORIGINS not set — CORS may block browser requests');
+    }
+    return process.env.NODE_ENV !== 'production';
+  }
+  return raw.split(',').map((o) => o.trim()).filter(Boolean);
 }
 
+const allowedOrigins = getAllowedOrigins();
+
 app.use(cors({
-  origin: allowedOrigin || true,
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-cron-secret'],

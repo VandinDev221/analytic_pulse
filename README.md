@@ -56,7 +56,12 @@ Render → **analytic-pulse-api** → **Environment**:
 | `POSTGRES_URL` | Igual ao `DATABASE_URL` |
 | `JWT_SECRET` | Gerado automaticamente |
 | `CRON_SECRET` | Gerado automaticamente |
-| `FRONTEND_URL` | `https://analytic-pulse-web.onrender.com` |
+| `FRONTEND_URL` | URL(s) do frontend, separadas por vírgula se houver mais de uma |
+
+Exemplo com Vercel + Render:
+```
+FRONTEND_URL=https://analytic-pulse.vercel.app,https://analytic-pulse-web.onrender.com
+```
 
 Render → **analytic-pulse-web** → **Environment**:
 
@@ -66,7 +71,26 @@ Render → **analytic-pulse-web** → **Environment**:
 
 Se `VITE_API_URL` estiver vazio, adicione manualmente e faça **Manual Deploy** no frontend.
 
-#### 4. Pings (cron-job.org)
+---
+
+## Frontend na Vercel
+
+1. Importe o repo na [Vercel](https://vercel.com) com **Root Directory** = `frontend`.
+2. **Environment Variables:**
+   | Variável | Valor |
+   |----------|-------|
+   | `VITE_API_URL` | `https://analytic-pulse-api.onrender.com` |
+3. Deploy.
+
+4. Na API (Render) → **Environment** → atualize `FRONTEND_URL`:
+   ```
+   https://analytic-pulse.vercel.app
+   ```
+   Ou várias origens separadas por vírgula se usar Vercel e Render ao mesmo tempo.
+
+5. **Redeploy** da API após alterar `FRONTEND_URL`.
+
+---
 
 1. Copie `CRON_SECRET` da API.
 2. [cron-job.org](https://cron-job.org) → novo job:
