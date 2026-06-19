@@ -1,6 +1,6 @@
 import { query } from '../lib/db';
 import { pingUrl } from './pingService';
-import { sendTelegramMessage, getAppBotToken } from './telegramApi';
+import { sendTelegramMessage, resolveBotToken } from './telegramApi';
 
 const DASHBOARD_URL =
   process.env.FRONTEND_URL?.split(',')[0]?.trim() ||
@@ -30,11 +30,11 @@ async function findUserByChatId(chatId: string): Promise<LinkedUser | null> {
   return result.rows[0] ?? null;
 }
 
-function replyConfig(chatId: number, user?: LinkedUser | null): {
+async function replyConfig(chatId: number, user?: LinkedUser | null): Promise<{
   bot_token: string;
   chat_id: string;
-} | null {
-  const token = user?.telegram_bot_token || getAppBotToken();
+} | null> {
+  const token = user?.telegram_bot_token || (await resolveBotToken());
   if (!token) return null;
   return { bot_token: token, chat_id: String(chatId) };
 }
@@ -44,8 +44,11 @@ async function reply(
   text: string,
   user?: LinkedUser | null
 ): Promise<void> {
-  const config = replyConfig(chatId, user);
-  if (!config) return;
+  const config = await replyConfig(chatId, user);
+  if (!config) {
+    console.error('Telegram reply skipped: no bot token');
+    return;
+  }
   await sendTelegramMessage(config, text);
 }
 
