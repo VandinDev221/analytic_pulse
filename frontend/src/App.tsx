@@ -1,40 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import type { Session } from '@supabase/supabase-js';
-import { supabase } from './lib/supabase';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { MonitorDetailPage } from './pages/MonitorDetailPage';
 import { StatusPage } from './pages/StatusPage';
 import { AppLayout } from './components/AppLayout';
+import { getMe } from './services/api';
 
 function App() {
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<{ id: string; email: string; slug: string } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userSlug, setUserSlug] = useState('');
+
+  async function checkAuth() {
+    const token = localStorage.getItem('pingpulse_token');
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const userData = await getMe();
+      setUser(userData);
+    } catch {
+      // Token is invalid or expired, clear it
+      localStorage.removeItem('pingpulse_token');
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    // Restore existing session
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session?.user) loadSlug(data.session.user.id);
-      setLoading(false);
-    });
-
-    // Listen for auth changes (login / logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user) loadSlug(session.user.id);
-      else setUserSlug('');
-    });
-
-    return () => subscription.unsubscribe();
+    checkAuth();
+    
+    // Listen for custom auth state changes
+    const handleAuthChange = () => {
+      checkAuth();
+    };
+    window.addEventListener('auth-state-change', handleAuthChange);
+    return () => window.removeEventListener('auth-state-change', handleAuthChange);
   }, []);
-
-  async function loadSlug(userId: string) {
-    const { data } = await supabase.from('profiles').select('slug').eq('user_id', userId).single();
-    if (data?.slug) setUserSlug(data.slug);
-  }
 
   if (loading) {
     return (
@@ -58,6 +64,8 @@ function App() {
     );
   }
 
+  const userSlug = user?.slug || '';
+
   return (
     <BrowserRouter>
       <Routes>
@@ -67,14 +75,14 @@ function App() {
         {/* Auth page */}
         <Route
           path="/login"
-          element={session ? <Navigate to="/" replace /> : <LoginPage />}
+          element={user ? <Navigate to="/" replace /> : <LoginPage />}
         />
 
         {/* Protected app routes */}
         <Route
           path="/"
           element={
-            session
+            user
               ? <AppLayout userSlug={userSlug}><DashboardPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
@@ -82,14 +90,14 @@ function App() {
         <Route
           path="/monitors/:id"
           element={
-            session
+            user
               ? <AppLayout userSlug={userSlug}><MonitorDetailPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
         />
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to={session ? '/' : '/login'} replace />} />
+        <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>
   );

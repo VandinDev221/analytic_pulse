@@ -1,15 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 
-dotenv.config();
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-super-secret-key-change-me';
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
 }
 
 /**
- * Middleware that validates a Supabase JWT from the Authorization header.
+ * Middleware that validates a custom JWT from the Authorization header.
  * Sets req.userId on success.
  */
 export async function requireAuth(
@@ -27,22 +26,16 @@ export async function requireAuth(
   const token = authHeader.split(' ')[1];
 
   try {
-    // Use the anon key to verify the user's JWT
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_ANON_KEY!
-    );
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
 
-    const { data, error } = await supabaseClient.auth.getUser(token);
-
-    if (error || !data.user) {
+    if (!decoded || !decoded.userId) {
       res.status(401).json({ error: 'Invalid or expired token' });
       return;
     }
 
-    req.userId = data.user.id;
+    req.userId = decoded.userId;
     next();
-  } catch {
+  } catch (error) {
     res.status(401).json({ error: 'Token verification failed' });
   }
 }

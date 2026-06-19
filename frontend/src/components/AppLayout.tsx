@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Activity, LayoutDashboard, Settings, LogOut, ExternalLink, Bell
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { saveNotificationSettings } from '../services/api';
 
 interface LayoutProps {
@@ -17,7 +16,9 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
   const [showSettings, setShowSettings] = useState(false);
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    localStorage.removeItem('pingpulse_token');
+    window.dispatchEvent(new Event('auth-state-change'));
+    navigate('/login');
   }
 
   const navItems = [

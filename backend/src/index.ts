@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import authRouter from './routes/auth';
 import monitorsRouter from './routes/monitors';
 import cronRouter from './routes/cron';
 import statusRouter from './routes/status';
@@ -11,8 +12,13 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ── Middleware ──────────────────────────────────────────────────────────────
+const allowedOrigin = process.env.FRONTEND_URL;
+if (!allowedOrigin && process.env.NODE_ENV === 'production') {
+  console.warn('⚠️  FRONTEND_URL not set — CORS may block browser requests');
+}
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: allowedOrigin || true,
   credentials: true,
 }));
 app.use(express.json());
@@ -23,6 +29,7 @@ app.get('/health', (_req, res) => {
 });
 
 // ── Routes ───────────────────────────────────────────────────────────────────
+app.use('/api/auth', authRouter);
 app.use('/api/monitors', monitorsRouter);
 app.use('/api/cron', cronRouter);
 app.use('/api/status', statusRouter);

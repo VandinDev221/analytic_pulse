@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabase } from '../lib/supabase';
+import { query } from '../lib/db';
 
 const router = Router();
 
@@ -14,25 +14,29 @@ router.get('/:slug', async (req: Request, res: Response) => {
 
   try {
     // 1. Look up the user by their public slug
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('user_id, display_name, page_title, page_description')
-      .eq('slug', slug)
-      .single();
+    const profileResult = await query(
+      `SELECT user_id, display_name, page_title, page_description 
+       FROM profiles 
+       WHERE slug = $1`,
+      [slug]
+    );
 
-    if (profileError || !profile) {
+    if (profileResult.rows.length === 0) {
       return res.status(404).json({ error: 'Status page not found' });
     }
 
-    // 2. Fetch all active monitors for this user
-    const { data: monitors, error: monitorsError } = await supabase
-      .from('monitors')
-      .select('id, name, url, status, last_checked_at, last_response_time_ms')
-      .eq('user_id', profile.user_id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: true });
+    const profile = profileResult.rows[0];
 
-    if (monitorsError) throw monitorsError;
+    // 2. Fetch all active monitors for this user
+    const monitorsResult = await query(
+      `SELECT id, name, url, status, last_checked_at, last_response_time_ms 
+       FROM monitors 
+       WHERE user_id = $1 AND status != 'inactive' 
+       ORDER BY created_at ASC`,
+      [profile.user_id]
+    );
+
+    const monitors = monitorsResult.rows;
 
     if (!monitors || monitors.length === 0) {
       return res.json({
@@ -42,16 +46,18 @@ router.get('/:slug', async (req: Request, res: Response) => {
       });
     }
 
-    // 3. Fetch 90-day aggregated uptime grid via SQL view (efficient GROUP BY)
+    // 3. Fetch 90-day aggregated uptime grid via SQL view
     const monitorIds = monitors.map(m => m.id);
-    const { data: grid, error: gridError } = await supabase
-      .from('uptime_daily')
-      .select('monitor_id, day, total_pings, up_pings, uptime_pct')
-      .in('monitor_id', monitorIds)
-      .gte('day', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-      .order('day', { ascending: true });
+    const gridResult = await query(
+      `SELECT monitor_id, TO_CHAR(day, 'YYYY-MM-DD') as day, total_pings, up_pings, uptime_pct 
+       FROM uptime_daily 
+       WHERE monitor_id = ANY($1) 
+       AND day >= CURRENT_DATE - INTERVAL '90 days' 
+       ORDER BY day ASC`,
+      [monitorIds]
+    );
 
-    if (gridError) throw gridError;
+    const grid = gridResult.rows;
 
     // 4. Group the grid data by monitor_id for easy frontend consumption
     const uptimeGrids: Record<string, { day: string; uptime_pct: number; total_pings: number }[]> = {};
@@ -62,8 +68,8 @@ router.get('/:slug', async (req: Request, res: Response) => {
       }
       uptimeGrids[row.monitor_id].push({
         day: row.day,
-        uptime_pct: row.uptime_pct,
-        total_pings: row.total_pings,
+        uptime_pct: Number(row.uptime_pct),
+        total_pings: Number(row.total_pings),
       });
     }
 

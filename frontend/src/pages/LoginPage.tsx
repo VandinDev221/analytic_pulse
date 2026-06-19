@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { login, signup } from '../services/api';
 import { Activity, Mail, Lock, ArrowRight, Zap } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -18,14 +18,14 @@ export const LoginPage: React.FC = () => {
 
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setSuccess('Conta criada! Verifique seu e-mail para confirmar o cadastro.');
+        await signup(email, password);
+        setSuccess('Conta criada com sucesso! Redirecionando...');
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        // App.tsx handles redirect via onAuthStateChange
+        await login(email, password);
       }
+      
+      // Notify authentication state change
+      window.dispatchEvent(new Event('auth-state-change'));
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro. Tente novamente.');
     } finally {

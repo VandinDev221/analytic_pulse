@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabase } from '../lib/supabase';
+import { query } from '../lib/db';
 import { pingUrl, runInBatches } from '../services/pingService';
 import { notifyStatusChange } from '../services/notificationService';
 import { requireCronSecret } from '../middleware/auth';
@@ -8,8 +8,8 @@ const router = Router();
 
 /**
  * GET /api/cron/ping
- * Called by cron-job.org on a schedule.
- * - Fetches all active monitors
+ * Called by cron-job.org or curl on a schedule.
+ * - Fetches all active monitors (status !== 'inactive')
  * - Pings them in batches of 5 (concurrency limiting)
  * - Saves results to ping_logs
  * - Sends Telegram alerts on status change
@@ -19,13 +19,13 @@ router.get('/ping', requireCronSecret, async (_req: Request, res: Response) => {
   console.log(`\n🕐 Cron ping started at ${new Date().toISOString()}`);
 
   try {
-    // 1. Fetch all active monitors
-    const { data: monitors, error } = await supabase
-      .from('monitors')
-      .select('id, user_id, name, url, status')
-      .eq('status', 'active');
+    // 1. Fetch all active monitors (not paused/inactive)
+    const monitorsResult = await query(
+      `SELECT id, user_id, name, url, status FROM monitors 
+       WHERE status != 'inactive'`
+    );
+    const monitors = monitorsResult.rows;
 
-    if (error) throw error;
     if (!monitors || monitors.length === 0) {
       return res.json({ message: 'No active monitors found', processed: 0 });
     }
@@ -37,32 +37,28 @@ router.get('/ping', requireCronSecret, async (_req: Request, res: Response) => {
       const result = await pingUrl(monitor.url);
 
       // 3. Save result to ping_logs
-      const { error: logError } = await supabase.from('ping_logs').insert({
-        monitor_id: monitor.id,
-        status_code: result.status_code,
-        response_time_ms: result.response_time_ms,
-        is_up: result.is_up,
-        error_message: result.error_message,
-      });
-
-      if (logError) {
+      try {
+        await query(
+          `INSERT INTO ping_logs (monitor_id, status_code, response_time_ms, is_up, error_message) 
+           VALUES ($1, $2, $3, $4, $5)`,
+          [monitor.id, result.status_code, result.response_time_ms, result.is_up, result.error_message]
+        );
+      } catch (logError) {
         console.error(`Failed to save log for ${monitor.url}:`, logError);
       }
 
       // 4. Determine previous status from monitor record
       const wasUp = monitor.status === 'up';
-      const statusChanged = wasUp !== result.is_up;
+      const statusChanged = monitor.status !== 'active' && wasUp !== result.is_up;
 
       // 5. Update the monitor's current status
       const newStatus = result.is_up ? 'up' : 'down';
-      await supabase
-        .from('monitors')
-        .update({
-          status: newStatus,
-          last_checked_at: new Date().toISOString(),
-          last_response_time_ms: result.response_time_ms,
-        })
-        .eq('id', monitor.id);
+      await query(
+        `UPDATE monitors 
+         SET status = $1, last_checked_at = NOW(), last_response_time_ms = $2 
+         WHERE id = $3`,
+        [newStatus, result.response_time_ms, monitor.id]
+      );
 
       // 6. Send notification if status changed
       if (statusChanged) {
@@ -80,7 +76,7 @@ router.get('/ping', requireCronSecret, async (_req: Request, res: Response) => {
       return { monitorId: monitor.id, name: monitor.name, ...result };
     });
 
-    // Run in batches of 5 to avoid overloading the free-tier server
+    // Run in batches of 5 to avoid overloading the server
     const results = await runInBatches(tasks, 5);
 
     const successCount = results.filter(r => r.status === 'fulfilled').length;

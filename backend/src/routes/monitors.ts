@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { supabase } from '../lib/supabase';
+import { query } from '../lib/db';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
@@ -22,153 +22,206 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
     return res.status(400).json({ error: 'Invalid URL format' });
   }
 
-  const { data, error } = await supabase
-    .from('monitors')
-    .insert({
-      user_id: req.userId,
-      name,
-      url,
-      method,
-      interval_minutes,
-      status: 'active',
-    })
-    .select()
-    .single();
-
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(201).json(data);
+  try {
+    const result = await query(
+      `INSERT INTO monitors (user_id, name, url, method, interval_minutes, status) 
+       VALUES ($1, $2, $3, $4, $5, 'active') 
+       RETURNING *`,
+      [req.userId, name, url, method, interval_minutes]
+    );
+    return res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 // ── GET /api/monitors ─────────────────────────────────────────────────────────
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
-  const { data, error } = await supabase
-    .from('monitors')
-    .select('*')
-    .eq('user_id', req.userId)
-    .order('created_at', { ascending: false });
-
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+  try {
+    const result = await query(
+      `SELECT * FROM monitors 
+       WHERE user_id = $1 
+       ORDER BY created_at DESC`,
+      [req.userId]
+    );
+    return res.json(result.rows);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 // ── GET /api/monitors/:id ─────────────────────────────────────────────────────
 router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
-  const { data, error } = await supabase
-    .from('monitors')
-    .select('*')
-    .eq('id', req.params.id)
-    .eq('user_id', req.userId)
-    .single();
+  try {
+    const result = await query(
+      `SELECT * FROM monitors 
+       WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.userId]
+    );
 
-  if (error) return res.status(404).json({ error: 'Monitor not found' });
-  return res.json(data);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Monitor not found' });
+    }
+    return res.json(result.rows[0]);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 // ── PATCH /api/monitors/:id ───────────────────────────────────────────────────
 router.patch('/:id', async (req: AuthenticatedRequest, res: Response) => {
   const { name, url, method, interval_minutes, status } = req.body;
 
-  const updates: Record<string, unknown> = {};
-  if (name !== undefined) updates.name = name;
-  if (url !== undefined) updates.url = url;
-  if (method !== undefined) updates.method = method;
-  if (interval_minutes !== undefined) updates.interval_minutes = interval_minutes;
-  if (status !== undefined) updates.status = status;
+  const fields: string[] = [];
+  const values: any[] = [];
+  let index = 1;
 
-  const { data, error } = await supabase
-    .from('monitors')
-    .update(updates)
-    .eq('id', req.params.id)
-    .eq('user_id', req.userId)
-    .select()
-    .single();
+  if (name !== undefined) {
+    fields.push(`name = $${index++}`);
+    values.push(name);
+  }
+  if (url !== undefined) {
+    fields.push(`url = $${index++}`);
+    values.push(url);
+  }
+  if (method !== undefined) {
+    fields.push(`method = $${index++}`);
+    values.push(method);
+  }
+  if (interval_minutes !== undefined) {
+    fields.push(`interval_minutes = $${index++}`);
+    values.push(interval_minutes);
+  }
+  if (status !== undefined) {
+    fields.push(`status = $${index++}`);
+    values.push(status);
+  }
 
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+  if (fields.length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  // Add id and userId filters
+  values.push(req.params.id);
+  const idIndex = index++;
+  values.push(req.userId);
+  const userIndex = index++;
+
+  try {
+    const result = await query(
+      `UPDATE monitors 
+       SET ${fields.join(', ')} 
+       WHERE id = $${idIndex} AND user_id = $${userIndex} 
+       RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Monitor not found' });
+    }
+    return res.json(result.rows[0]);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 // ── DELETE /api/monitors/:id ──────────────────────────────────────────────────
 router.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
-  const { error } = await supabase
-    .from('monitors')
-    .delete()
-    .eq('id', req.params.id)
-    .eq('user_id', req.userId);
+  try {
+    const result = await query(
+      `DELETE FROM monitors 
+       WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.userId]
+    );
 
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(204).send();
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Monitor not found or unauthorized' });
+    }
+    return res.status(204).send();
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 // ── GET /api/monitors/:id/metrics ─────────────────────────────────────────────
 router.get('/:id/metrics', async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
 
-  // Verify ownership
-  const { data: monitor, error: monitorError } = await supabase
-    .from('monitors')
-    .select('id')
-    .eq('id', id)
-    .eq('user_id', req.userId)
-    .single();
+  try {
+    // 1. Verify ownership
+    const monitorCheck = await query(
+      `SELECT id FROM monitors 
+       WHERE id = $1 AND user_id = $2`,
+      [id, req.userId]
+    );
 
-  if (monitorError || !monitor) {
-    return res.status(404).json({ error: 'Monitor not found' });
-  }
+    if (monitorCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Monitor not found' });
+    }
 
-  // Use the aggregated SQL view for 7-day uptime and average latency
-  const { data: metrics, error: metricsError } = await supabase.rpc('get_monitor_metrics', {
-    p_monitor_id: id,
-  });
+    // 2. Call Postgres function
+    const metricsResult = await query(
+      `SELECT * FROM get_monitor_metrics($1)`,
+      [id]
+    );
 
-  if (metricsError) return res.status(500).json({ error: metricsError.message });
+    // 3. Fetch recent logs
+    const logsResult = await query(
+      `SELECT response_time_ms, is_up, created_at, status_code, error_message 
+       FROM ping_logs 
+       WHERE monitor_id = $1 
+       ORDER BY created_at DESC 
+       LIMIT 100`,
+      [id]
+    );
 
-  // Recent latency data (last 100 pings) for the chart
-  const { data: recentLogs, error: logsError } = await supabase
-    .from('ping_logs')
-    .select('response_time_ms, is_up, created_at, status_code, error_message')
-    .eq('monitor_id', id)
-    .order('created_at', { ascending: false })
-    .limit(100);
-
-  if (logsError) return res.status(500).json({ error: logsError.message });
-
-  return res.json({
-    metrics: metrics?.[0] ?? null,
-    recent_logs: recentLogs ?? [],
-  });
-});
-
-// ── GET /api/monitors/:id/settings (Notification settings) ───────────────────
-router.get('/:id/notifications', async (req: AuthenticatedRequest, res: Response) => {
-  const { data, error } = await supabase
-    .from('notification_settings')
-    .select('id, telegram_chat_id, is_enabled')
-    .eq('user_id', req.userId)
-    .single();
-
-  if (error && error.code !== 'PGRST116') {
+    return res.json({
+      metrics: metricsResult.rows[0] ?? null,
+      recent_logs: logsResult.rows ?? [],
+    });
+  } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
-  return res.json(data ?? null);
+});
+
+// ── GET /api/monitors/:id/notifications (Notification settings) ───────────────────
+router.get('/:id/notifications', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const result = await query(
+      `SELECT id, telegram_chat_id, is_enabled 
+       FROM notification_settings 
+       WHERE user_id = $1`,
+      [req.userId]
+    );
+
+    return res.json(result.rows[0] ?? null);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 // ── PUT /api/monitors/notifications ──────────────────────────────────────────
 router.put('/notifications/settings', async (req: AuthenticatedRequest, res: Response) => {
   const { telegram_bot_token, telegram_chat_id, is_enabled } = req.body;
 
-  const { data, error } = await supabase
-    .from('notification_settings')
-    .upsert({
-      user_id: req.userId,
-      telegram_bot_token,
-      telegram_chat_id,
-      is_enabled,
-    }, { onConflict: 'user_id' })
-    .select()
-    .single();
+  try {
+    const result = await query(
+      `INSERT INTO notification_settings (user_id, telegram_bot_token, telegram_chat_id, is_enabled, updated_at) 
+       VALUES ($1, $2, $3, $4, NOW()) 
+       ON CONFLICT (user_id) 
+       DO UPDATE SET 
+         telegram_bot_token = EXCLUDED.telegram_bot_token, 
+         telegram_chat_id = EXCLUDED.telegram_chat_id, 
+         is_enabled = EXCLUDED.is_enabled, 
+         updated_at = NOW() 
+       RETURNING *`,
+      [req.userId, telegram_bot_token, telegram_chat_id, is_enabled]
+    );
 
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+    return res.json(result.rows[0]);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 export default router;

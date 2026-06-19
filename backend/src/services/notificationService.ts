@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { supabase } from '../lib/supabase';
+import { query } from '../lib/db';
 
 interface TelegramConfig {
   bot_token: string;
@@ -31,11 +31,14 @@ export async function notifyStatusChange(
   errorMessage: string | null
 ): Promise<void> {
   try {
-    const { data: settings } = await supabase
-      .from('notification_settings')
-      .select('telegram_bot_token, telegram_chat_id, is_enabled')
-      .eq('user_id', userId)
-      .single();
+    const result = await query(
+      `SELECT telegram_bot_token, telegram_chat_id, is_enabled 
+       FROM notification_settings 
+       WHERE user_id = $1`,
+      [userId]
+    );
+
+    const settings = result.rows[0];
 
     if (!settings?.is_enabled || !settings.telegram_bot_token || !settings.telegram_chat_id) {
       return;

@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Activity, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
-import { getMonitorMetrics } from '../services/api';
+import { getMonitor, getMonitorMetrics } from '../services/api';
 import type { MonitorMetrics, PingLog } from '../types';
 import { LatencyChart } from '../components/LatencyChart';
 import { ChartSkeleton } from '../components/SkeletonLoader';
-import { supabase } from '../lib/supabase';
 
 export const MonitorDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,8 +20,8 @@ export const MonitorDetailPage: React.FC = () => {
 
     async function load() {
       try {
-        // Load monitor details from Supabase directly
-        const { data: m } = await supabase.from('monitors').select('*').eq('id', id).single();
+        // Load monitor details from backend API
+        const m = await getMonitor(id!);
         setMonitor(m);
 
         // Load metrics + logs from backend API

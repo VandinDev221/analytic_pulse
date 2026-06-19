@@ -1,25 +1,75 @@
-import { supabase } from '../lib/supabase';
 import type { Monitor, MonitorMetrics, PingLog } from '../types';
 
-const API = '/api';
+const API = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
+  : '/api';
 
-async function getAuthHeader(): Promise<HeadersInit> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+function getAuthHeader(): HeadersInit {
+  const token = localStorage.getItem('pingpulse_token');
+  return token 
+    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } 
+    : { 'Content-Type': 'application/json' };
+}
+
+// ── Auth ──────────────────────────────────────────────────────
+
+export async function login(email: string, password: string): Promise<{ token: string; user: { id: string; email: string } }> {
+  const res = await fetch(`${API}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao entrar');
+  }
+  const data = await res.json();
+  localStorage.setItem('pingpulse_token', data.token);
+  return data;
+}
+
+export async function signup(email: string, password: string): Promise<{ token: string; user: { id: string; email: string } }> {
+  const res = await fetch(`${API}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao cadastrar');
+  }
+  const data = await res.json();
+  localStorage.setItem('pingpulse_token', data.token);
+  return data;
+}
+
+export async function getMe(): Promise<{ id: string; email: string; slug: string }> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/auth/me`, { headers });
+  if (!res.ok) {
+    throw new Error('Não autenticado');
+  }
+  return res.json();
 }
 
 // ── Monitors ──────────────────────────────────────────────────
 
 export async function getMonitors(): Promise<Monitor[]> {
-  const headers = await getAuthHeader();
+  const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors`, { headers });
   if (!res.ok) throw new Error('Failed to fetch monitors');
   return res.json();
 }
 
+export async function getMonitor(id: string): Promise<Monitor> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/monitors/${id}`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch monitor');
+  return res.json();
+}
+
 export async function createMonitor(payload: Pick<Monitor, 'name' | 'url' | 'method' | 'interval_minutes'>): Promise<Monitor> {
-  const headers = await getAuthHeader();
+  const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors`, {
     method: 'POST',
     headers,
@@ -33,13 +83,13 @@ export async function createMonitor(payload: Pick<Monitor, 'name' | 'url' | 'met
 }
 
 export async function deleteMonitor(id: string): Promise<void> {
-  const headers = await getAuthHeader();
+  const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { method: 'DELETE', headers });
   if (!res.ok) throw new Error('Failed to delete monitor');
 }
 
 export async function toggleMonitorStatus(id: string, active: boolean): Promise<Monitor> {
-  const headers = await getAuthHeader();
+  const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, {
     method: 'PATCH',
     headers,
@@ -55,7 +105,7 @@ export async function getMonitorMetrics(id: string): Promise<{
   metrics: MonitorMetrics;
   recent_logs: PingLog[];
 }> {
-  const headers = await getAuthHeader();
+  const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}/metrics`, { headers });
   if (!res.ok) throw new Error('Failed to fetch metrics');
   return res.json();
@@ -68,7 +118,7 @@ export async function saveNotificationSettings(payload: {
   telegram_chat_id: string;
   is_enabled: boolean;
 }) {
-  const headers = await getAuthHeader();
+  const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/notifications/settings`, {
     method: 'PUT',
     headers,

@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, RefreshCw, Activity, CheckCircle, AlertTriangle, Link2 } from 'lucide-react';
-import { getMonitors } from '../services/api';
+import { getMonitors, getMe } from '../services/api';
 import type { Monitor } from '../types';
 import { MonitorCard } from '../components/MonitorCard';
 import { AddMonitorModal } from '../components/AddMonitorModal';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
-import { supabase } from '../lib/supabase';
 
 export const DashboardPage: React.FC = () => {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
@@ -27,10 +26,11 @@ export const DashboardPage: React.FC = () => {
   }
 
   async function loadSlug() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase.from('profiles').select('slug').eq('user_id', user.id).single();
-      if (profile?.slug) setUserSlug(profile.slug);
+    try {
+      const userData = await getMe();
+      if (userData?.slug) setUserSlug(userData.slug);
+    } catch (err) {
+      console.error(err);
     }
   }
 
