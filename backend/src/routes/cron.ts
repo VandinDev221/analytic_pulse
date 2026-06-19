@@ -47,9 +47,17 @@ router.get('/ping', requireCronSecret, async (_req: Request, res: Response) => {
         console.error(`Failed to save log for ${monitor.url}:`, logError);
       }
 
-      // 4. Determine previous status from monitor record
-      const wasUp = monitor.status === 'up';
-      const statusChanged = monitor.status !== 'active' && wasUp !== result.is_up;
+      // 4. Detect status change for Telegram alerts
+      const prev = monitor.status;
+      let statusChanged = false;
+      if (prev === 'active') {
+        // Primeira verificação: alerta se estiver offline
+        statusChanged = !result.is_up;
+      } else if (prev === 'up' || prev === 'down') {
+        statusChanged =
+          (prev === 'up' && !result.is_up) ||
+          (prev === 'down' && result.is_up);
+      }
 
       // 5. Update the monitor's current status
       const newStatus = result.is_up ? 'up' : 'down';
@@ -62,7 +70,7 @@ router.get('/ping', requireCronSecret, async (_req: Request, res: Response) => {
 
       // 6. Send notification if status changed
       if (statusChanged) {
-        console.log(`🔔 Status change detected for "${monitor.name}": ${wasUp ? 'UP→DOWN' : 'DOWN→UP'}`);
+        console.log(`🔔 Status change detected for "${monitor.name}": ${prev} → ${result.is_up ? 'up' : 'down'}`);
         await notifyStatusChange(
           monitor.user_id,
           monitor.name,
