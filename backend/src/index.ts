@@ -11,27 +11,41 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ── Middleware ──────────────────────────────────────────────────────────────
-// FRONTEND_URL ou CORS_ORIGINS: uma ou mais URLs separadas por vírgula
-function getAllowedOrigins(): string[] | boolean {
-  const raw = process.env.CORS_ORIGINS || process.env.FRONTEND_URL;
-  if (!raw?.trim()) {
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('⚠️  FRONTEND_URL / CORS_ORIGINS not set — CORS may block browser requests');
-    }
-    return process.env.NODE_ENV !== 'production';
-  }
-  return raw.split(',').map((o) => o.trim()).filter(Boolean);
+// ── CORS ─────────────────────────────────────────────────────────────────────
+const DEFAULT_ORIGINS = [
+  'https://analytic-pulse.vercel.app',
+  'https://analytic-pulse-web.onrender.com',
+];
+
+function getAllowedOrigins(): string[] {
+  const raw = process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '';
+  const fromEnv = raw.split(',').map((o) => o.trim()).filter(Boolean);
+  return [...new Set([...fromEnv, ...DEFAULT_ORIGINS])];
 }
 
 const allowedOrigins = getAllowedOrigins();
 
-app.use(cors({
-  origin: allowedOrigins,
+const corsOptions: cors.CorsOptions = {
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    console.warn(`CORS blocked origin: ${origin}`);
+    callback(null, false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-cron-secret'],
-}));
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+
 app.use(express.json());
 
 // ── Health check ────────────────────────────────────────────────────────────
@@ -48,6 +62,7 @@ app.use('/api/status', statusRouter);
 // ── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 PingPulse backend running on port ${PORT}`);
+  console.log(`🌐 CORS origins: ${allowedOrigins.join(', ')}`);
 });
 
 export default app;

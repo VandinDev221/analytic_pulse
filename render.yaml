@@ -30,11 +30,8 @@ services:
         generateValue: true
       - key: CRON_SECRET
         generateValue: true
-      - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: analytic-pulse-web
-          envVarKey: RENDER_EXTERNAL_URL
+      - key: CORS_ORIGINS
+        value: https://analytic-pulse.vercel.app,https://analytic-pulse-web.onrender.com
 
   # ── Frontend SPA ────────────────────────────────────────────────────────────
   - type: web
