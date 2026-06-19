@@ -46,7 +46,7 @@ $$;
 DROP TRIGGER IF EXISTS on_auth_user_created ON users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON users
-  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+  FOR EACH ROW EXECUTE PROCEDURE handle_new_user();
 
 
 -- ── 3. Monitors ───────────────────────────────────────────────

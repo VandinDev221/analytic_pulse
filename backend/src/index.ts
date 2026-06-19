@@ -5,6 +5,7 @@ import authRouter from './routes/auth';
 import monitorsRouter from './routes/monitors';
 import cronRouter from './routes/cron';
 import statusRouter from './routes/status';
+import { checkDatabase } from './lib/db';
 
 dotenv.config();
 
@@ -53,6 +54,25 @@ app.get('/health', (_req: express.Request, res: express.Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/health/db', async (_req: express.Request, res: express.Response) => {
+  const db = await checkDatabase();
+  if (!db.connected) {
+    return res.status(503).json({
+      status: 'error',
+      ...db,
+      hint: 'Configure DATABASE_URL e POSTGRES_URL no Render (analytic-pulse-api → Environment)',
+    });
+  }
+  if (!db.schema_ready) {
+    return res.status(503).json({
+      status: 'error',
+      ...db,
+      hint: 'Execute database/schema.sql no SQL Editor do seu Postgres (Neon ou Render)',
+    });
+  }
+  return res.json({ status: 'ok', ...db });
+});
+
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRouter);
 app.use('/api/monitors', monitorsRouter);
@@ -60,9 +80,17 @@ app.use('/api/cron', cronRouter);
 app.use('/api/status', statusRouter);
 
 // ── Start ────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 PingPulse backend running on port ${PORT}`);
   console.log(`🌐 CORS origins: ${allowedOrigins.join(', ')}`);
+  const db = await checkDatabase();
+  if (!db.connected) {
+    console.error(`❌ Database: ${db.error}`);
+  } else if (!db.schema_ready) {
+    console.warn('⚠️  Database conectado, mas tabela users não existe — rode schema.sql');
+  } else {
+    console.log('✅ Database conectado e schema OK');
+  }
 });
 
 export default app;

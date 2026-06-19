@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { query } from '../lib/db';
+import { query, checkDatabase } from '../lib/db';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
@@ -42,8 +42,19 @@ router.post('/signup', async (req: Request, res: Response) => {
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
     return res.status(201).json({ token, user });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Signup error:', err);
+    const pgCode = (err as { code?: string })?.code;
+    if (pgCode === '42P01') {
+      return res.status(503).json({
+        error: 'Tabelas não encontradas. Execute database/schema.sql no Postgres.',
+      });
+    }
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
+      return res.status(503).json({
+        error: 'Banco não configurado. Defina DATABASE_URL na API.',
+      });
+    }
     return res.status(500).json({ error: 'Falha ao registrar usuário' });
   }
 });
