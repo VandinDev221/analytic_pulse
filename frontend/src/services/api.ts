@@ -115,9 +115,19 @@ export async function getMonitorMetrics(id: string): Promise<{
 
 // ── Notification Settings ─────────────────────────────────────
 
+export async function getNotificationSettings(): Promise<import('../types').NotificationSettings> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/monitors/notifications/settings`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch notification settings');
+  return res.json();
+}
+
 export async function saveNotificationSettings(payload: {
-  telegram_bot_token: string;
-  telegram_chat_id: string;
+  notification_channel: 'telegram' | 'whatsapp';
+  telegram_bot_token?: string;
+  telegram_chat_id?: string;
+  whatsapp_phone?: string;
+  whatsapp_api_key?: string;
   is_enabled: boolean;
 }) {
   const headers = getAuthHeader();
@@ -128,6 +138,18 @@ export async function saveNotificationSettings(payload: {
   });
   if (!res.ok) throw new Error('Failed to save settings');
   return res.json();
+}
+
+export async function testNotificationSettings(): Promise<void> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/monitors/notifications/test`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao enviar teste');
+  }
 }
 
 // ── Status Page (public) ──────────────────────────────────────

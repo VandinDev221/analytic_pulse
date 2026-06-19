@@ -87,14 +87,19 @@ CREATE INDEX IF NOT EXISTS idx_ping_logs_created_at   ON ping_logs(created_at DE
 CREATE INDEX IF NOT EXISTS idx_ping_logs_monitor_date ON ping_logs(monitor_id, created_at DESC);
 
 
--- ── 5. Notification Settings (per user, Telegram) ────────────
+-- ── 5. Notification Settings (Telegram ou WhatsApp) ───────────
 CREATE TABLE IF NOT EXISTS notification_settings (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id             UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
-  telegram_bot_token  TEXT,
-  telegram_chat_id    TEXT,
-  is_enabled          BOOLEAN DEFAULT false,
-  updated_at          TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id               UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+  notification_channel  VARCHAR(20) DEFAULT 'telegram',
+  -- Telegram
+  telegram_bot_token    TEXT,
+  telegram_chat_id      TEXT,
+  -- WhatsApp (CallMeBot + número do TapDigits ou próprio)
+  whatsapp_phone        TEXT,
+  whatsapp_api_key      TEXT,
+  is_enabled            BOOLEAN DEFAULT false,
+  updated_at            TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
 

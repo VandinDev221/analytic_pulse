@@ -55,8 +55,13 @@ export interface StatusPageData {
 }
 
 // ── Notification Settings ─────────────────────────────────────
+export type NotificationChannel = 'telegram' | 'whatsapp';
+
 export interface NotificationSettings {
-  id: string;
-  telegram_chat_id: string;
+  notification_channel: NotificationChannel;
+  telegram_bot_token?: string;
+  telegram_chat_id?: string;
+  whatsapp_phone?: string;
+  whatsapp_api_key?: string;
   is_enabled: boolean;
 }

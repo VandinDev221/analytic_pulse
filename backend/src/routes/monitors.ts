@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { query } from '../lib/db';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
+import { sendTestNotification } from '../services/notificationService';
 
 const router = Router();
 
@@ -47,6 +48,91 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
     return res.json(result.rows);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Notification settings (rotas fixas antes de /:id) ────────────────────────
+
+router.get('/notifications/settings', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const result = await query(
+      `SELECT notification_channel, telegram_bot_token, telegram_chat_id,
+              whatsapp_phone, whatsapp_api_key, is_enabled
+       FROM notification_settings WHERE user_id = $1`,
+      [req.userId]
+    );
+    const row = result.rows[0];
+    if (!row) {
+      return res.json({
+        notification_channel: 'telegram',
+        telegram_bot_token: '',
+        telegram_chat_id: '',
+        whatsapp_phone: '',
+        whatsapp_api_key: '',
+        is_enabled: false,
+      });
+    }
+    return res.json(row);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erro no servidor';
+    return res.status(500).json({ error: message });
+  }
+});
+
+router.put('/notifications/settings', async (req: AuthenticatedRequest, res: Response) => {
+  const {
+    notification_channel = 'telegram',
+    telegram_bot_token,
+    telegram_chat_id,
+    whatsapp_phone,
+    whatsapp_api_key,
+    is_enabled,
+  } = req.body;
+
+  if (!['telegram', 'whatsapp'].includes(notification_channel)) {
+    return res.status(400).json({ error: 'Canal inválido' });
+  }
+
+  try {
+    const result = await query(
+      `INSERT INTO notification_settings (
+         user_id, notification_channel, telegram_bot_token, telegram_chat_id,
+         whatsapp_phone, whatsapp_api_key, is_enabled, updated_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         notification_channel = EXCLUDED.notification_channel,
+         telegram_bot_token = EXCLUDED.telegram_bot_token,
+         telegram_chat_id = EXCLUDED.telegram_chat_id,
+         whatsapp_phone = EXCLUDED.whatsapp_phone,
+         whatsapp_api_key = EXCLUDED.whatsapp_api_key,
+         is_enabled = EXCLUDED.is_enabled,
+         updated_at = NOW()
+       RETURNING notification_channel, telegram_bot_token, telegram_chat_id,
+                 whatsapp_phone, whatsapp_api_key, is_enabled`,
+      [
+        req.userId,
+        notification_channel,
+        telegram_bot_token || null,
+        telegram_chat_id || null,
+        whatsapp_phone || null,
+        whatsapp_api_key || null,
+        is_enabled ?? false,
+      ]
+    );
+    return res.json(result.rows[0]);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erro no servidor';
+    return res.status(500).json({ error: message });
+  }
+});
+
+router.post('/notifications/test', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    await sendTestNotification(req.userId!);
+    return res.json({ message: 'Notificação de teste enviada' });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Falha ao enviar teste';
+    return res.status(500).json({ error: message });
   }
 });
 
@@ -179,46 +265,6 @@ router.get('/:id/metrics', async (req: AuthenticatedRequest, res: Response) => {
       metrics: metricsResult.rows[0] ?? null,
       recent_logs: logsResult.rows ?? [],
     });
-  } catch (error: any) {
-    return res.status(500).json({ error: error.message });
-  }
-});
-
-// ── GET /api/monitors/:id/notifications (Notification settings) ───────────────────
-router.get('/:id/notifications', async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const result = await query(
-      `SELECT id, telegram_chat_id, is_enabled 
-       FROM notification_settings 
-       WHERE user_id = $1`,
-      [req.userId]
-    );
-
-    return res.json(result.rows[0] ?? null);
-  } catch (error: any) {
-    return res.status(500).json({ error: error.message });
-  }
-});
-
-// ── PUT /api/monitors/notifications ──────────────────────────────────────────
-router.put('/notifications/settings', async (req: AuthenticatedRequest, res: Response) => {
-  const { telegram_bot_token, telegram_chat_id, is_enabled } = req.body;
-
-  try {
-    const result = await query(
-      `INSERT INTO notification_settings (user_id, telegram_bot_token, telegram_chat_id, is_enabled, updated_at) 
-       VALUES ($1, $2, $3, $4, NOW()) 
-       ON CONFLICT (user_id) 
-       DO UPDATE SET 
-         telegram_bot_token = EXCLUDED.telegram_bot_token, 
-         telegram_chat_id = EXCLUDED.telegram_chat_id, 
-         is_enabled = EXCLUDED.is_enabled, 
-         updated_at = NOW() 
-       RETURNING *`,
-      [req.userId, telegram_bot_token, telegram_chat_id, is_enabled]
-    );
-
-    return res.json(result.rows[0]);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
