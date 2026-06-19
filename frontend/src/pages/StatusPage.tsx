@@ -1,24 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Activity, ExternalLink, CheckCircle, XCircle } from 'lucide-react';
+import { Activity, ExternalLink, CheckCircle, XCircle, Radio } from 'lucide-react';
 import { getStatusPage } from '../services/api';
 import type { StatusPageData } from '../types';
 import { UptimeGrid } from '../components/UptimeGrid';
 import { GridSkeleton } from '../components/SkeletonLoader';
+import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
 
 export const StatusPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [data, setData] = useState<StatusPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const load = useCallback(async (silent = false) => {
+    if (!slug) return;
+    try {
+      const page = await getStatusPage(slug);
+      setData(page);
+      setError('');
+      setLastUpdated(new Date());
+    } catch {
+      if (!silent) setError('Página de status não encontrada.');
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [slug]);
 
   useEffect(() => {
-    if (!slug) return;
-    getStatusPage(slug)
-      .then(setData)
-      .catch(() => setError('Página de status não encontrada.'))
-      .finally(() => setLoading(false));
-  }, [slug]);
+    setLoading(true);
+    load(false);
+  }, [load]);
+
+  usePolling(() => load(true), POLL_INTERVAL_MS, !loading && !!slug && !error);
 
   const allOperational = data?.monitors.every(m => m.status !== 'down') ?? false;
 
@@ -84,6 +99,12 @@ export const StatusPage: React.FC = () => {
                   {allOperational ? '✓ Todos os sistemas operacionais' : '⚠ Degradação detectada'}
                 </span>
               </div>
+              {lastUpdated && (
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <Radio size={10} color="var(--green)" />
+                  Atualização automática · {lastUpdated.toLocaleTimeString('pt-BR')}
+                </p>
+              )}
             </div>
 
             {/* Monitors */}

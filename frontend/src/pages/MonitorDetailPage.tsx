@@ -1,42 +1,44 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Activity, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Activity, Clock, CheckCircle, AlertTriangle, Radio } from 'lucide-react';
 import { getMonitor, getMonitorMetrics } from '../services/api';
-import type { MonitorMetrics, PingLog } from '../types';
+import type { Monitor, MonitorMetrics, PingLog } from '../types';
 import { LatencyChart } from '../components/LatencyChart';
 import { ChartSkeleton } from '../components/SkeletonLoader';
+import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
 
 export const MonitorDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [monitor, setMonitor] = useState<any>(null);
+  const [monitor, setMonitor] = useState<Monitor | null>(null);
   const [metrics, setMetrics] = useState<MonitorMetrics | null>(null);
   const [logs, setLogs] = useState<PingLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const load = useCallback(async (silent = false) => {
+    if (!id) return;
+    try {
+      const m = await getMonitor(id);
+      setMonitor(m);
+      const { metrics: mtr, recent_logs } = await getMonitorMetrics(id);
+      setMetrics(mtr);
+      setLogs(recent_logs);
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [id]);
 
   useEffect(() => {
-    if (!id) return;
+    setLoading(true);
+    load(false);
+  }, [load]);
 
-    async function load() {
-      try {
-        // Load monitor details from backend API
-        const m = await getMonitor(id!);
-        setMonitor(m);
-
-        // Load metrics + logs from backend API
-        const { metrics: mtr, recent_logs } = await getMonitorMetrics(id!);
-        setMetrics(mtr);
-        setLogs(recent_logs);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    load();
-  }, [id]);
+  usePolling(() => load(true), POLL_INTERVAL_MS, !loading && !!id);
 
   if (!monitor && !loading) {
     return (
@@ -63,7 +65,7 @@ export const MonitorDetailPage: React.FC = () => {
           <div className="skeleton" style={{ height: 100, borderRadius: 16 }} />
           <div className="skeleton" style={{ height: 260, borderRadius: 16 }} />
         </div>
-      ) : (
+      ) : monitor ? (
         <>
           {/* Monitor header card */}
           <div className="glass" style={{ padding: 28, marginBottom: 20 }}>
@@ -80,11 +82,25 @@ export const MonitorDetailPage: React.FC = () => {
                   <Activity size={22} color={isUp ? 'var(--green)' : 'var(--red)'} />
                 </div>
                 <div>
-                  <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{monitor.name}</h1>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{monitor.name}</h1>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      fontSize: 10, color: 'var(--green)', fontWeight: 600,
+                      background: 'rgba(34,197,94,0.1)', borderRadius: 99, padding: '2px 8px',
+                    }}>
+                      <Radio size={9} /> Ao vivo
+                    </span>
+                  </div>
                   <a href={monitor.url} target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
                     {monitor.url} <ExternalLink size={11} />
                   </a>
+                  {lastUpdated && (
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+                      Atualizado {lastUpdated.toLocaleTimeString('pt-BR')}
+                    </span>
+                  )}
                 </div>
               </div>
               <span className={`badge ${isUp ? 'badge-up' : monitor.status === 'down' ? 'badge-down' : 'badge-unknown'}`} style={{ fontSize: 13, padding: '5px 14px' }}>
@@ -169,7 +185,7 @@ export const MonitorDetailPage: React.FC = () => {
             </div>
           )}
         </>
-      )}
+      ) : null}
     </div>
   );
 };

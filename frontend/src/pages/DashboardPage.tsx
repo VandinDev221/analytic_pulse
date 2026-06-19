@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Plus, RefreshCw, Activity, CheckCircle, AlertTriangle, Link2 } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Plus, RefreshCw, Activity, CheckCircle, AlertTriangle, Link2, Radio } from 'lucide-react';
 import { getMonitors, getMe } from '../services/api';
 import type { Monitor } from '../types';
 import { MonitorCard } from '../components/MonitorCard';
 import { AddMonitorModal } from '../components/AddMonitorModal';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
+import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
 
 export const DashboardPage: React.FC = () => {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
@@ -12,62 +13,73 @@ export const DashboardPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [userSlug, setUserSlug] = useState('');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  async function loadMonitors() {
+  const loadMonitors = useCallback(async (silent = false) => {
+    if (!silent) setRefreshing(true);
     try {
       const data = await getMonitors();
       setMonitors(data);
+      setLastUpdated(new Date());
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }
+  }, []);
 
-  async function loadSlug() {
-    try {
-      const userData = await getMe();
-      if (userData?.slug) setUserSlug(userData.slug);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  useEffect(() => { loadMonitors(); loadSlug(); }, []);
-
-  function handleRefresh() {
-    setRefreshing(true);
+  useEffect(() => {
     loadMonitors();
-  }
+    getMe()
+      .then(u => { if (u?.slug) setUserSlug(u.slug); })
+      .catch(console.error);
+  }, [loadMonitors]);
 
-  // Stats
+  usePolling(() => loadMonitors(true), POLL_INTERVAL_MS, !loading);
+
   const upCount   = monitors.filter(m => m.status === 'up').length;
   const downCount = monitors.filter(m => m.status === 'down').length;
   const allUp     = downCount === 0 && monitors.length > 0;
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
-      {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32, gap: 16 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>Monitores</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)' }}>Monitores</h1>
+            {!loading && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                fontSize: 11, color: 'var(--green)', fontWeight: 600,
+                background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)',
+                borderRadius: 99, padding: '3px 10px',
+              }}>
+                <Radio size={10} style={{ animation: 'pulse 2s ease-in-out infinite' }} />
+                Ao vivo
+              </span>
+            )}
+          </div>
           <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
             Gerencie e acompanhe a disponibilidade dos seus serviços.
+            {lastUpdated && (
+              <span style={{ display: 'block', fontSize: 12, marginTop: 4, color: 'var(--text-muted)' }}>
+                Atualizado {lastUpdated.toLocaleTimeString('pt-BR')}
+              </span>
+            )}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button id="refresh-btn" className="btn btn-ghost" onClick={handleRefresh} disabled={refreshing}>
+          <button className="btn btn-ghost" onClick={() => loadMonitors()} disabled={refreshing}>
             <RefreshCw size={14} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
             Atualizar
           </button>
-          <button id="add-monitor-btn" className="btn btn-primary" onClick={() => setShowModal(true)}>
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
             <Plus size={15} /> Novo Monitor
           </button>
         </div>
       </div>
 
-      {/* Stats bar */}
       {!loading && monitors.length > 0 && (
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
           {[
@@ -82,7 +94,6 @@ export const DashboardPage: React.FC = () => {
             </div>
           ))}
 
-          {/* Overall status pill */}
           <div className="glass-sm" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
             <span className={`pulse-dot ${allUp ? 'pulse-dot-green' : 'pulse-dot-red'}`} />
             <span style={{ fontSize: 13, fontWeight: 600, color: allUp ? 'var(--green)' : 'var(--red)' }}>
@@ -92,7 +103,6 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Status page link */}
       {userSlug && (
         <div className="glass-sm" style={{ padding: '12px 16px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
           <Link2 size={14} color="var(--accent-light)" />
@@ -107,7 +117,6 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Monitor list */}
       {loading ? (
         <DashboardSkeleton />
       ) : monitors.length === 0 ? (
@@ -129,7 +138,7 @@ export const DashboardPage: React.FC = () => {
               Adicione seu primeiro site ou API para começar a monitorar a disponibilidade.
             </p>
           </div>
-          <button id="first-monitor-btn" className="btn btn-primary" onClick={() => setShowModal(true)}>
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
             <Plus size={15} /> Criar primeiro monitor
           </button>
         </div>
@@ -147,7 +156,6 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Add Monitor Modal */}
       {showModal && (
         <AddMonitorModal
           onClose={() => setShowModal(false)}
