@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { login, sendSignupCode, verifySignup, loginWithGoogle, getAuthConfig } from '../services/api';
 import { Activity, Mail, Lock, ArrowRight, Zap, KeyRound } from 'lucide-react';
@@ -15,12 +15,28 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [googleEnabled, setGoogleEnabled] = useState(!!GOOGLE_CLIENT_ID);
+  const [googleWidth, setGoogleWidth] = useState(320);
+  const googleWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getAuthConfig().then(cfg => {
       setGoogleEnabled(cfg.googleEnabled || !!GOOGLE_CLIENT_ID);
     });
   }, []);
+
+  useEffect(() => {
+    const el = googleWrapRef.current;
+    if (!el) return;
+
+    function updateWidth() {
+      setGoogleWidth(Math.min(el!.clientWidth, 400));
+    }
+
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [googleEnabled, signupStep]);
 
   function resetSignup() {
     setSignupStep('form');
@@ -82,62 +98,70 @@ export const LoginPage: React.FC = () => {
 
   const formContent = (
     <>
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
+      <header className="login-page__header">
+        <div className="login-page__logo">
+          <Activity size={20} color="#fff" />
+        </div>
+        <h1 className="login-page__title">
           {mode === 'login'
-            ? 'Entrar na plataforma'
+            ? 'Entrar'
             : signupStep === 'verify'
-              ? 'Confirme seu e-mail'
-              : 'Criar sua conta'}
-        </h2>
-        <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+              ? 'Confirmar e-mail'
+              : 'Criar conta'}
+        </h1>
+        <p className="login-page__subtitle">
           {mode === 'login' ? (
-            <>Novo por aqui?{' '}
-              <button type="button" onClick={() => switchMode('signup')} style={linkBtnStyle}>
-                Criar conta grátis
+            <>
+              Novo por aqui?{' '}
+              <button type="button" onClick={() => switchMode('signup')} className="login-page__link">
+                Criar conta
               </button>
             </>
           ) : signupStep === 'verify' ? (
-            <>Não recebeu?{' '}
-              <button type="button" onClick={() => { setSignupStep('form'); setSuccess(''); }} style={linkBtnStyle}>
+            <>
+              Não recebeu?{' '}
+              <button
+                type="button"
+                onClick={() => { setSignupStep('form'); setSuccess(''); }}
+                className="login-page__link"
+              >
                 Reenviar código
               </button>
             </>
           ) : (
-            <>Já tem conta?{' '}
-              <button type="button" onClick={() => switchMode('login')} style={linkBtnStyle}>
+            <>
+              Já tem conta?{' '}
+              <button type="button" onClick={() => switchMode('login')} className="login-page__link">
                 Fazer login
               </button>
             </>
           )}
         </p>
-      </div>
+      </header>
 
       {googleEnabled && GOOGLE_CLIENT_ID && signupStep === 'form' && (
         <>
-          <div style={{ marginBottom: 16 }}>
+          <div ref={googleWrapRef} className="login-page__google">
             <GoogleLogin
               onSuccess={res => handleGoogleSuccess(res.credential)}
               onError={() => setError('Falha ao entrar com Google')}
               theme="filled_black"
               size="large"
-              width="348"
+              width={String(googleWidth)}
               text={mode === 'login' ? 'signin_with' : 'signup_with'}
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>ou com e-mail</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <div className="login-page__divider">
+            <span>ou com e-mail</span>
           </div>
         </>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <form onSubmit={handleSubmit} className="login-page__form">
         {signupStep === 'verify' ? (
           <>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
-              Digite o código enviado para <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>
+            <p className="login-page__hint">
+              Digite o código enviado para <strong>{email}</strong>
             </p>
             <div className="form-group">
               <label className="form-label">
@@ -145,7 +169,7 @@ export const LoginPage: React.FC = () => {
                 Código de verificação
               </label>
               <input
-                className="input"
+                className="input login-page__code-input"
                 type="text"
                 inputMode="numeric"
                 pattern="\d{6}"
@@ -155,7 +179,6 @@ export const LoginPage: React.FC = () => {
                 onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 required
                 autoFocus
-                style={{ letterSpacing: 8, fontSize: 20, textAlign: 'center', fontFamily: 'var(--font-mono)' }}
               />
             </div>
           </>
@@ -174,6 +197,7 @@ export const LoginPage: React.FC = () => {
                 onChange={e => setEmail(e.target.value)}
                 required
                 autoFocus={mode === 'login'}
+                autoComplete="email"
                 id="email-input"
               />
             </div>
@@ -191,25 +215,21 @@ export const LoginPage: React.FC = () => {
                 onChange={e => setPassword(e.target.value)}
                 required
                 minLength={6}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 id="password-input"
               />
             </div>
           </>
         )}
 
-        {error && (
-          <div style={errorBoxStyle}>{error}</div>
-        )}
-        {success && (
-          <div style={successBoxStyle}>{success}</div>
-        )}
+        {error && <div className="login-page__alert login-page__alert--error">{error}</div>}
+        {success && <div className="login-page__alert login-page__alert--success">{success}</div>}
 
         <button
           id="auth-submit-btn"
           type="submit"
-          className="btn btn-primary"
+          className="btn btn-primary login-page__submit"
           disabled={loading}
-          style={{ width: '100%', justifyContent: 'center', padding: '12px 20px', marginTop: 4, fontSize: 15 }}
         >
           <Zap size={15} />
           {loading
@@ -223,74 +243,18 @@ export const LoginPage: React.FC = () => {
         </button>
       </form>
 
-      <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', marginTop: 32, lineHeight: 1.6 }}>
+      <p className="login-page__terms">
         Ao continuar, você concorda com os nossos Termos de Serviço e Política de Privacidade.
       </p>
     </>
   );
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      background: 'var(--bg-base)',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      <div style={{ position: 'absolute', top: -200, left: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: -150, right: -150, width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+    <div className="login-page">
+      <div className="login-page__glow login-page__glow--top" aria-hidden />
+      <div className="login-page__glow login-page__glow--bottom" aria-hidden />
 
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        padding: '60px 80px',
-        background: 'linear-gradient(135deg, rgba(99,102,241,0.04) 0%, transparent 60%)',
-        borderRight: '1px solid var(--border)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 48 }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: 12,
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 24px rgba(99,102,241,0.4)',
-          }}>
-            <Activity size={22} color="#fff" />
-          </div>
-          <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
-            Ping<span className="gradient-text">Pulse</span>
-          </span>
-        </div>
-
-        <h1 style={{ fontSize: 42, fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: 20 }}>
-          Monitore seus<br />
-          <span className="gradient-text">serviços em tempo real</span>
-        </h1>
-        <p style={{ fontSize: 16, color: 'var(--text-secondary)', lineHeight: 1.7, maxWidth: 420, marginBottom: 48 }}>
-          Alertas instantâneos via Telegram, gráficos de latência, e uma página de status pública elegante — tudo gratuito.
-        </p>
-
-        {[
-          { icon: '🟢', text: 'Grid de 90 dias de uptime estilo GitHub' },
-          { icon: '⚡', text: 'Pings a cada 1 minuto com detecção imediata' },
-          { icon: '🤖', text: 'Alertas no Telegram quando um serviço cair' },
-          { icon: '📈', text: 'Gráficos de latência histórica interativos' },
-        ].map(f => (
-          <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-            <span style={{ fontSize: 18 }}>{f.icon}</span>
-            <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{f.text}</span>
-          </div>
-        ))}
-      </div>
-
-      <div style={{
-        width: 460,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        padding: '60px 56px',
-      }}>
+      <div className="login-page__card">
         {GOOGLE_CLIENT_ID ? (
           <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
             {formContent}
@@ -301,32 +265,4 @@ export const LoginPage: React.FC = () => {
       </div>
     </div>
   );
-};
-
-const linkBtnStyle: React.CSSProperties = {
-  color: 'var(--accent-light)',
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  fontWeight: 600,
-  fontSize: 14,
-  padding: 0,
-};
-
-const errorBoxStyle: React.CSSProperties = {
-  background: 'rgba(239,68,68,0.1)',
-  border: '1px solid rgba(239,68,68,0.25)',
-  borderRadius: 8,
-  padding: '10px 14px',
-  fontSize: 13,
-  color: '#f87171',
-};
-
-const successBoxStyle: React.CSSProperties = {
-  background: 'rgba(34,197,94,0.1)',
-  border: '1px solid rgba(34,197,94,0.25)',
-  borderRadius: 8,
-  padding: '10px 14px',
-  fontSize: 13,
-  color: '#4ade80',
 };
