@@ -61,53 +61,29 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({ monitor, onDeleted, on
   }
 
   return (
-    <div
-      className="glass animate-fade-in-up"
-      style={{
-        padding: '20px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 14,
-        opacity: isActive ? 1 : 0.55,
-        transition: 'opacity 0.3s',
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <div
-            style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.2))',
-              border: '1px solid rgba(99,102,241,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
+    <div className={`glass animate-fade-in-up monitor-card ${isActive ? '' : 'monitor-card--inactive'}`}>
+      <div className="monitor-card__header">
+        <div className="monitor-card__info">
+          <div className="monitor-card__icon">
             <Activity size={16} color="#818cf8" />
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {monitor.name}
-            </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="monitor-card__name">{monitor.name}</div>
             <a
               href={monitor.url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3, transition: 'color 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent-light)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+              className="monitor-card__url"
             >
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{monitor.url}</span>
-              <ExternalLink size={10} />
+              <span>{monitor.url}</span>
+              <ExternalLink size={10} style={{ flexShrink: 0 }} />
             </a>
           </div>
         </div>
         <StatusBadge status={monitor.status} />
       </div>
 
-      {/* Stats row */}
-      <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-secondary)' }}>
+      <div className="monitor-card__stats">
         {monitor.last_response_time_ms !== undefined && monitor.last_response_time_ms !== null ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <Clock size={12} />
@@ -116,23 +92,17 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({ monitor, onDeleted, on
         ) : (
           <span style={{ color: 'var(--text-muted)' }}>Sem verificação ainda</span>
         )}
-        <span style={{ color: 'var(--text-muted)' }}>•</span>
         <span>A cada {monitor.interval_minutes} min</span>
         {monitor.last_checked_at && (
-          <>
-            <span style={{ color: 'var(--text-muted)' }}>•</span>
-            <span>
-              Última: {new Date(monitor.last_checked_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </>
+          <span>
+            Última: {new Date(monitor.last_checked_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
         )}
       </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4, borderTop: '1px solid var(--border)' }}>
+      <div className="monitor-card__actions">
         <button
           className="btn btn-ghost"
-          style={{ padding: '6px 12px', fontSize: 12 }}
           onClick={handleToggle}
           disabled={toggling}
           title={isActive ? 'Pausar' : 'Ativar'}
@@ -142,27 +112,13 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({ monitor, onDeleted, on
             : <><ToggleLeft size={14} /> Ativar</>
           }
         </button>
-        <button
-          className="btn btn-ghost"
-          style={{ padding: '6px 12px', fontSize: 12 }}
-          onClick={() => onEdit(monitor)}
-          title="Editar"
-        >
+        <button className="btn btn-ghost" onClick={() => onEdit(monitor)} title="Editar">
           <Pencil size={13} /> Editar
         </button>
-        <button
-          className="btn btn-ghost"
-          style={{ padding: '6px 12px', fontSize: 12 }}
-          onClick={() => navigate(`/monitors/${monitor.id}`)}
-        >
+        <button className="btn btn-ghost" onClick={() => navigate(`/monitors/${monitor.id}`)}>
           Detalhes <ChevronRight size={14} />
         </button>
-        <button
-          className="btn btn-danger"
-          style={{ padding: '6px 12px', fontSize: 12 }}
-          onClick={handleDelete}
-          disabled={deleting}
-        >
+        <button className="btn btn-danger" onClick={handleDelete} disabled={deleting}>
           <Trash2 size={13} />
           {deleting ? '...' : 'Remover'}
         </button>

@@ -54,9 +54,8 @@ export const MonitorDetailPage: React.FC = () => {
   const isUp = monitor?.status === 'up';
 
   return (
-    <div style={{ maxWidth: 860, margin: '0 auto' }}>
-      {/* Back button */}
-      <button className="btn btn-ghost" onClick={() => navigate('/')} style={{ marginBottom: 24, padding: '8px 14px' }}>
+    <div className="page">
+      <button className="btn btn-ghost" onClick={() => navigate('/')} style={{ marginBottom: 20, minHeight: 44 }}>
         <ArrowLeft size={14} /> Voltar
       </button>
 
@@ -68,8 +67,8 @@ export const MonitorDetailPage: React.FC = () => {
       ) : monitor ? (
         <>
           {/* Monitor header card */}
-          <div className="glass" style={{ padding: 28, marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div className="glass detail-card" style={{ padding: 28, marginBottom: 20 }}>
+            <div className="detail-card__header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: 14,
@@ -110,7 +109,7 @@ export const MonitorDetailPage: React.FC = () => {
             </div>
 
             {/* Metrics row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+            <div className="metrics-grid">
               {[
                 {
                   label: 'Uptime 7 dias',
@@ -150,7 +149,7 @@ export const MonitorDetailPage: React.FC = () => {
           </div>
 
           {/* Latency chart card */}
-          <div className="glass" style={{ padding: 28, marginBottom: 20 }}>
+          <div className="glass detail-card" style={{ padding: 28, marginBottom: 20 }}>
             <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20, color: 'var(--text-primary)' }}>
               Latência — últimas verificações
             </h2>

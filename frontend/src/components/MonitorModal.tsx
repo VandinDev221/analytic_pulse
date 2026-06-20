@@ -6,7 +6,6 @@ import type { Monitor } from '../types';
 interface MonitorModalProps {
   onClose: () => void;
   onSaved: (monitor: Monitor) => void;
-  /** Se informado, abre em modo edição */
   monitor?: Monitor;
 }
 
@@ -50,21 +49,19 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div className="modal__header">
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-              {isEdit ? 'Editar Monitor' : 'Novo Monitor'}
-            </h2>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
+            <h2 className="modal__title">{isEdit ? 'Editar Monitor' : 'Novo Monitor'}</h2>
+            <p className="modal__subtitle">
               {isEdit ? 'Altere nome, URL ou intervalo' : 'Adicione uma URL para monitorar'}
             </p>
           </div>
-          <button onClick={onClose} className="btn btn-ghost" style={{ padding: 8, width: 34, height: 34 }}>
+          <button type="button" onClick={onClose} className="btn btn-ghost modal__close" aria-label="Fechar">
             <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form onSubmit={handleSubmit} className="modal__form">
           <div className="form-group">
             <label className="form-label">
               <Tag size={12} style={{ display: 'inline', marginRight: 4 }} />
@@ -90,10 +87,13 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
               value={form.url}
               onChange={e => set('url', e.target.value)}
               type="url"
+              inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="modal-form-grid">
             <div className="form-group">
               <label className="form-label">Método HTTP</label>
               <select className="input" value={form.method} onChange={e => set('method', e.target.value)}>
@@ -117,13 +117,9 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
             </div>
           </div>
 
-          {error && (
-            <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#f87171' }}>
-              {error}
-            </div>
-          )}
+          {error && <div className="alert alert--error">{error}</div>}
 
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8 }}>
+          <div className="modal__actions">
             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Criar Monitor'}

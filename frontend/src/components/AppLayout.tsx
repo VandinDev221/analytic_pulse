@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle
+  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X
 } from 'lucide-react';
 import {
   getNotificationSettings,
@@ -19,6 +19,16 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showSettings, setShowSettings] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
 
   async function handleLogout() {
     localStorage.removeItem('pingpulse_token');
@@ -26,87 +36,132 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
     navigate('/login');
   }
 
+  function openSettings() {
+    setMenuOpen(false);
+    setShowSettings(true);
+  }
+
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
+    { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
   ];
+
+  const sidebarContent = (
+    <>
+      <div className="sidebar__brand">
+        <div className="sidebar__brand-row">
+          <div className="sidebar__logo-icon">
+            <Activity size={17} color="#fff" />
+          </div>
+          <span className="sidebar__logo-text">
+            Ping<span className="gradient-text">Pulse</span>
+          </span>
+          <button
+            type="button"
+            className="sidebar__close"
+            onClick={() => setMenuOpen(false)}
+            aria-label="Fechar menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
+      </div>
+
+      <nav className="sidebar__nav">
+        {navItems.map(item => (
+          <a
+            key={item.path}
+            className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+            onClick={() => navigate(item.path)}
+            style={{ cursor: 'pointer' }}
+          >
+            {item.icon}
+            {item.label}
+          </a>
+        ))}
+
+        <button
+          type="button"
+          className={`nav-item ${showSettings ? 'active' : ''}`}
+          onClick={openSettings}
+        >
+          <Bell size={18} />
+          Notificações
+        </button>
+
+        {userSlug && (
+          <a
+            className="nav-item"
+            href={`/status/${userSlug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMenuOpen(false)}
+          >
+            <ExternalLink size={18} />
+            Página Pública
+          </a>
+        )}
+      </nav>
+
+      <div className="sidebar__footer">
+        <button
+          type="button"
+          className="nav-item nav-item--danger"
+          onClick={handleLogout}
+        >
+          <LogOut size={18} />
+          Sair
+        </button>
+      </div>
+    </>
+  );
 
   return (
     <div className="layout">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        {/* Logo */}
-        <div style={{ padding: '0 20px 24px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 34, height: 34, borderRadius: 9,
-              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 16px rgba(99,102,241,0.35)',
-              flexShrink: 0,
-            }}>
-              <Activity size={17} color="#fff" />
-            </div>
-            <span style={{ fontSize: 16, fontWeight: 700 }}>
-              Ping<span className="gradient-text">Pulse</span>
-            </span>
+      <header className="mobile-header">
+        <button
+          type="button"
+          className="mobile-header__menu"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Abrir menu"
+        >
+          <Menu size={22} />
+        </button>
+        <div className="mobile-header__brand">
+          <div className="sidebar__logo-icon sidebar__logo-icon--sm">
+            <Activity size={15} color="#fff" />
           </div>
+          <span className="mobile-header__title">
+            Ping<span className="gradient-text">Pulse</span>
+          </span>
         </div>
-
-        {/* Nav */}
-        <nav style={{ flex: 1 }}>
-          {navItems.map(item => (
-            <a
-              key={item.path}
-              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
-              onClick={() => navigate(item.path)}
-              style={{ cursor: 'pointer' }}
-            >
-              {item.icon}
-              {item.label}
-            </a>
-          ))}
-
+        <div className="mobile-header__actions">
           <button
-            className={`nav-item ${showSettings ? 'active' : ''}`}
-            style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer' }}
-            onClick={() => setShowSettings(true)}
+            type="button"
+            className="mobile-header__icon-btn"
+            onClick={openSettings}
+            aria-label="Notificações"
           >
-            <Bell size={16} />
-            Notificações
-          </button>
-
-          {userSlug && (
-            <a
-              className="nav-item"
-              href={`/status/${userSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLink size={16} />
-              Página Pública
-            </a>
-          )}
-        </nav>
-
-        {/* Bottom logout */}
-        <div style={{ padding: '16px 0', borderTop: '1px solid var(--border)' }}>
-          <button
-            className="nav-item"
-            style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--red)' }}
-            onClick={handleLogout}
-          >
-            <LogOut size={16} />
-            Sair
+            <Bell size={20} />
           </button>
         </div>
+      </header>
+
+      {menuOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setMenuOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      <aside className={`sidebar ${menuOpen ? 'sidebar--open' : ''}`}>
+        {sidebarContent}
       </aside>
 
-      {/* Main content */}
       <main className="main-content">
         {children}
       </main>
 
-      {/* Notification Settings Modal */}
       {showSettings && <NotificationSettingsModal onClose={() => setShowSettings(false)} />}
     </div>
   );
@@ -188,23 +243,21 @@ const NotificationSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose 
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="modal modal--settings">
+        <div className="modal__header">
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Alertas</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-              Receba avisos quando um serviço cair ou voltar.
-            </p>
+            <h2 className="modal__title">Alertas</h2>
+            <p className="modal__subtitle">Receba avisos quando um serviço cair ou voltar.</p>
           </div>
-          <button onClick={onClose} className="btn btn-ghost" style={{ padding: 8 }}>✕</button>
+          <button type="button" onClick={onClose} className="btn btn-ghost modal__close" aria-label="Fechar">
+            <X size={18} />
+          </button>
         </div>
 
-        {/* Channel toggle */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <div className="channel-toggle">
           <button
             type="button"
             className={`btn ${channel === 'telegram' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             onClick={() => setChannel('telegram')}
           >
             <Send size={16} /> Telegram
@@ -212,7 +265,6 @@ const NotificationSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose 
           <button
             type="button"
             className={`btn ${channel === 'whatsapp' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             onClick={() => setChannel('whatsapp')}
           >
             <MessageCircle size={16} /> WhatsApp
@@ -222,68 +274,54 @@ const NotificationSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose 
         {loading ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Carregando...</p>
         ) : (
-          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form onSubmit={handleSave} className="modal__form">
             {channel === 'telegram' ? (
               <>
-                <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8, padding: '12px 14px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  <strong style={{ color: 'var(--accent-light)' }}>Telegram:</strong><br />
+                <div className="info-box info-box--indigo">
+                  <strong>Telegram:</strong><br />
                   1. Crie um bot com <code>@BotFather</code><br />
                   2. Envie <code>/start</code> ao <code>@PulseAssistentBot</code> para obter seu Chat ID
                 </div>
                 <div className="form-group">
                   <label className="form-label">Bot Token</label>
-                  <input className="input" placeholder="1234567890:ABCdef..." value={botToken} onChange={e => setBotToken(e.target.value)} style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }} />
+                  <input className="input input--mono" placeholder="1234567890:ABCdef..." value={botToken} onChange={e => setBotToken(e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Chat ID</label>
-                  <input className="input" placeholder="8350092970" value={chatId} onChange={e => setChatId(e.target.value)} style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }} />
+                  <input className="input input--mono" placeholder="8350092970" value={chatId} onChange={e => setChatId(e.target.value)} inputMode="numeric" />
                 </div>
               </>
             ) : (
               <>
-                <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, padding: '12px 14px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  <strong style={{ color: '#4ade80' }}>WhatsApp:</strong><br />
+                <div className="info-box info-box--green">
+                  <strong>WhatsApp:</strong><br />
                   1. Obtenha um número em{' '}
-                  <a href={TAPDIGITS_URL} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80' }}>
-                    TapDigits
-                  </a>{' '}
-                  (grátis, 150+ países)<br />
+                  <a href={TAPDIGITS_URL} target="_blank" rel="noopener noreferrer">TapDigits</a><br />
                   2.{' '}
-                  <a href={CALLMEBOT_ACTIVATE} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80' }}>
-                    Ative o CallMeBot
-                  </a>{' '}
-                  no WhatsApp (envie a mensagem de autorização)<br />
+                  <a href={CALLMEBOT_ACTIVATE} target="_blank" rel="noopener noreferrer">Ative o CallMeBot</a>{' '}
+                  no WhatsApp<br />
                   3. Copie a <strong>API Key</strong> que o CallMeBot responder
                 </div>
                 <div className="form-group">
                   <label className="form-label">Número WhatsApp (com DDI, sem +)</label>
-                  <input className="input" placeholder="5585999999999" value={whatsappPhone} onChange={e => setWhatsappPhone(e.target.value)} style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }} />
+                  <input className="input input--mono" placeholder="5585999999999" value={whatsappPhone} onChange={e => setWhatsappPhone(e.target.value)} inputMode="tel" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">CallMeBot API Key</label>
-                  <input className="input" placeholder="123456" value={whatsappApiKey} onChange={e => setWhatsappApiKey(e.target.value)} style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }} />
+                  <input className="input input--mono" placeholder="123456" value={whatsappApiKey} onChange={e => setWhatsappApiKey(e.target.value)} inputMode="numeric" />
                 </div>
               </>
             )}
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 14, color: 'var(--text-secondary)' }}>
-              <input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
+            <label className="checkbox-row">
+              <input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} />
               Notificações ativadas
             </label>
 
-            {error && (
-              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#f87171' }}>
-                {error}
-              </div>
-            )}
+            {error && <div className="alert alert--error">{error}</div>}
+            {saved && <div className="alert alert--success">✓ Configurações salvas!</div>}
 
-            {saved && (
-              <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#4ade80' }}>
-                ✓ Configurações salvas!
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4, flexWrap: 'wrap' }}>
+            <div className="modal__actions">
               <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
               <button type="button" className="btn btn-ghost" onClick={handleTest} disabled={testing || saving}>
                 {testing ? 'Enviando...' : 'Enviar teste'}
