@@ -1,8 +1,42 @@
 # Analytic Pulse
 
-Monitor de uptime open-source: disponibilidade de URLs/APIs, gráficos de latência, status page pública e alertas via Telegram.
+Monitor de uptime open-source em evolução para plataforma completa de **observabilidade**: disponibilidade de URLs/APIs, gráficos de latência, status page pública e alertas via Telegram.
 
 Repositório: [github.com/VandinDev221/analytic_pulse](https://github.com/VandinDev221/analytic_pulse)
+
+## Documentação do produto
+
+| Documento | Conteúdo |
+|-----------|----------|
+| [docs/VISION.md](docs/VISION.md) | Missão, princípios e destino do produto |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Fases (Monitoring → AI) — trabalhar um épico por vez |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Monorepo, Clean Architecture, Services + Repositories |
+| [docs/UI_GUIDELINES.md](docs/UI_GUIDELINES.md) | Design System, UX e anti-padrões |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Como contribuir sem dívida técnica |
+
+> Implementar o roadmap em fatias. Evite big-bang de várias fases no mesmo PR.
+
+## Estrutura do monorepo
+
+```
+apps/
+  api/          # API Express (@analytic-pulse/api)
+  web/          # Dashboard React (@analytic-pulse/web)
+packages/
+  shared/       # Tipos e erros compartilhados
+  ui/           # Design System base
+database/       # schema.sql e migrations
+docs/           # Visão, roadmap, arquitetura
+```
+
+### Desenvolvimento local
+
+```bash
+npm install
+npm run build:shared   # necessário antes da API em dev
+npm run dev:api        # http://localhost:3001
+npm run dev:web        # http://localhost:5173
+```
 
 ---
 
@@ -75,22 +109,28 @@ Se `VITE_API_URL` estiver vazio, adicione manualmente e faça **Manual Deploy** 
 
 ## Frontend na Vercel
 
-1. Importe o repo na [Vercel](https://vercel.com) com **Root Directory** = `frontend`.
-2. **Environment Variables:**
+1. Importe o repo na [Vercel](https://vercel.com) com **Root Directory** = `apps/web`.
+2. Em **Settings → General / Build & Development**:
+   - **Install Command:** `cd ../.. && npm install`
+   - **Build Command:** `cd ../.. && npm run build:web`
+   - **Output Directory:** `dist` (relativo a `apps/web`)
+3. **Environment Variables:**
    | Variável | Valor |
    |----------|-------|
    | `VITE_API_URL` | `https://analytic-pulse-api.onrender.com` |
-3. Deploy.
+4. Deploy.
 
-4. Na API (Render) → **Environment** → atualize `FRONTEND_URL`:
+5. Na API (Render) → **Environment** → atualize `FRONTEND_URL`:
    ```
    https://analytic-pulse.vercel.app
    ```
    Ou várias origens separadas por vírgula se usar Vercel e Render ao mesmo tempo.
 
-5. **Redeploy** da API após alterar `FRONTEND_URL`.
+6. **Redeploy** da API após alterar `FRONTEND_URL`.
 
 ---
+
+#### 4. Cron de pings
 
 1. Copie `CRON_SECRET` da API.
 2. [cron-job.org](https://cron-job.org) → novo job:
@@ -103,6 +143,7 @@ Se `VITE_API_URL` estiver vazio, adicione manualmente e faça **Manual Deploy** 
 | Teste | URL |
 |-------|-----|
 | Health | `https://analytic-pulse-api.onrender.com/health` |
+| Metrics | `https://analytic-pulse-api.onrender.com/metrics` |
 | App | `https://analytic-pulse-web.onrender.com` |
 
 ---

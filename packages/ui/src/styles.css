@@ -1,0 +1,197 @@
+/* Design tokens — base do Design System Analytic Pulse */
+:root {
+  --ap-radius-sm: 6px;
+  --ap-radius-md: 10px;
+  --ap-radius-lg: 14px;
+  --ap-radius-pill: 999px;
+
+  --ap-space-1: 4px;
+  --ap-space-2: 8px;
+  --ap-space-3: 12px;
+  --ap-space-4: 16px;
+  --ap-space-5: 24px;
+  --ap-space-6: 32px;
+
+  --ap-font-sans: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --ap-transition: 160ms ease;
+
+  --ap-color-up: #16a34a;
+  --ap-color-down: #dc2626;
+  --ap-color-active: #2563eb;
+  --ap-color-unknown: #64748b;
+}
+
+.ap-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ap-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--ap-radius-md);
+  font-family: var(--ap-font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  transition: background-color var(--ap-transition), border-color var(--ap-transition),
+    opacity var(--ap-transition), transform var(--ap-transition);
+}
+
+.ap-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ap-btn--sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.ap-btn--lg {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+}
+
+.ap-btn--primary {
+  background: var(--accent, #2563eb);
+  color: #fff;
+}
+
+.ap-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.ap-btn--ghost {
+  background: transparent;
+  border-color: var(--border, rgba(255, 255, 255, 0.12));
+  color: var(--text-primary, inherit);
+}
+
+.ap-btn--ghost:hover:not(:disabled) {
+  background: var(--bg-elevated, rgba(255, 255, 255, 0.04));
+}
+
+.ap-btn--danger {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--ap-color-down) 40%, transparent);
+  color: var(--ap-color-down);
+}
+
+.ap-btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ap-color-down) 12%, transparent);
+}
+
+.ap-input {
+  width: 100%;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--ap-radius-md);
+  background: var(--bg-elevated, transparent);
+  color: var(--text-primary, inherit);
+  font-family: var(--ap-font-sans);
+  font-size: 0.875rem;
+  padding: 0.65rem 0.85rem;
+  outline: none;
+  transition: border-color var(--ap-transition), box-shadow var(--ap-transition);
+}
+
+.ap-input:focus {
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #2563eb) 25%, transparent);
+}
+
+.ap-input--error {
+  border-color: var(--ap-color-down);
+}
+
+.ap-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ap-space-2);
+}
+
+.ap-field__label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.ap-field__hint,
+.ap-field__error {
+  font-size: 0.75rem;
+}
+
+.ap-field__error {
+  color: var(--ap-color-down);
+}
+
+.ap-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: var(--ap-radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0.55rem;
+  text-transform: uppercase;
+}
+
+.ap-badge--up {
+  background: color-mix(in srgb, var(--ap-color-up) 18%, transparent);
+  color: var(--ap-color-up);
+}
+
+.ap-badge--down {
+  background: color-mix(in srgb, var(--ap-color-down) 18%, transparent);
+  color: var(--ap-color-down);
+}
+
+.ap-badge--active {
+  background: color-mix(in srgb, var(--ap-color-active) 18%, transparent);
+  color: var(--ap-color-active);
+}
+
+.ap-badge--unknown,
+.ap-badge--inactive {
+  background: color-mix(in srgb, var(--ap-color-unknown) 18%, transparent);
+  color: var(--ap-color-unknown);
+}
+
+.ap-card {
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--ap-radius-lg);
+  background: var(--bg-elevated, rgba(255, 255, 255, 0.03));
+  padding: var(--ap-space-5);
+}
+
+.ap-skeleton {
+  border-radius: var(--ap-radius-sm);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text-secondary, #64748b) 12%, transparent) 0%,
+    color-mix(in srgb, var(--text-secondary, #64748b) 22%, transparent) 50%,
+    color-mix(in srgb, var(--text-secondary, #64748b) 12%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: ap-skeleton-shine 1.4s ease-in-out infinite;
+}
+
+@keyframes ap-skeleton-shine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-skeleton {
+    animation: none;
+  }
+
+  .ap-btn {
+    transition: none;
+  }
+}

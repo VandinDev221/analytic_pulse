@@ -1,4 +1,4 @@
-# Render Blueprint — API + Frontend
+# Render Blueprint — API + Frontend (monorepo)
 # https://render.com/docs/blueprint-spec
 #
 # Postgres NÃO é criado aqui (limite: 1 banco free por workspace no Render).
@@ -15,9 +15,9 @@ services:
     runtime: node
     plan: free
     region: oregon
-    rootDir: backend
-    buildCommand: npm ci --include=dev && npm run build
-    startCommand: npm start
+    rootDir: .
+    buildCommand: npm ci --include=dev && npm run build:api
+    startCommand: npm run start -w @analytic-pulse/api
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -47,9 +47,9 @@ services:
   - type: web
     name: analytic-pulse-web
     runtime: static
-    rootDir: frontend
-    buildCommand: npm ci && VITE_API_URL=https://analytic-pulse-api.onrender.com npm run build
-    staticPublishPath: dist
+    rootDir: .
+    buildCommand: npm ci && VITE_API_URL=https://analytic-pulse-api.onrender.com npm run build:web
+    staticPublishPath: apps/web/dist
     envVars:
       - key: VITE_API_URL
         fromService:

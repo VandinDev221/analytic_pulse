@@ -2,15 +2,24 @@
   "name": "analytic-pulse",
   "version": "1.0.0",
   "private": true,
-  "description": "Monitor de disponibilidade de URLs/APIs com gráficos de latência, status page pública e alertas via Telegram",
+  "description": "Plataforma open source de observabilidade — Analytic Pulse",
   "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "install:all": "npm install --prefix backend && npm install --prefix frontend",
-    "dev:backend": "npm run dev --prefix backend",
-    "dev:frontend": "npm run dev --prefix frontend",
-    "build": "npm run build --prefix backend && npm run build --prefix frontend",
-    "build:backend": "npm run build --prefix backend",
-    "build:frontend": "npm run build --prefix frontend"
+    "install:all": "npm install",
+    "dev:api": "npm run dev -w @analytic-pulse/api",
+    "dev:web": "npm run dev -w @analytic-pulse/web",
+    "dev:backend": "npm run dev -w @analytic-pulse/api",
+    "dev:frontend": "npm run dev -w @analytic-pulse/web",
+    "build:shared": "npm run build -w @analytic-pulse/shared",
+    "build:api": "npm run build -w @analytic-pulse/shared && npm run build -w @analytic-pulse/api",
+    "build:web": "npm run build -w @analytic-pulse/shared && npm run build -w @analytic-pulse/web",
+    "build": "npm run build -w @analytic-pulse/shared && npm run build -w @analytic-pulse/api && npm run build -w @analytic-pulse/web",
+    "build:backend": "npm run build:api",
+    "build:frontend": "npm run build:web"
   },
   "repository": {
     "type": "git",
