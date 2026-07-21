@@ -18,6 +18,7 @@ export type CheckableMonitor = Pick<
   | 'json_expected'
   | 'request_headers'
   | 'request_body'
+  | 'ssl_warn_days'
 >;
 
 export interface Checker {

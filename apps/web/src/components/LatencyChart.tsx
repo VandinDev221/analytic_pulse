@@ -56,12 +56,12 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({ logs }) => {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 24, marginBottom: 16, fontSize: 13 }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 16, fontSize: 13, flexWrap: 'wrap' }}>
         <span style={{ color: 'var(--text-secondary)' }}>
           Latência média: <strong style={{ color: 'var(--accent-light)' }}>{avg} ms</strong>
         </span>
         <span style={{ color: 'var(--text-secondary)' }}>
-          Último: <strong style={{ color: 'var(--text-primary)' }}>{data[data.length - 1]?.latency ?? 'Offline'} ms</strong>
+          Último: <strong style={{ color: 'var(--text-primary)' }}>{data[data.length - 1]?.latency ?? 'Offline'}{data[data.length - 1]?.latency != null ? ' ms' : ''}</strong>
         </span>
       </div>
 

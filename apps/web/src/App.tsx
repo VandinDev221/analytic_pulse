@@ -9,6 +9,7 @@ import { AlertsPage } from './pages/AlertsPage';
 import { StatusPageSettingsPage } from './pages/StatusPageSettingsPage';
 import { MapPage } from './pages/MapPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import { SslPage } from './pages/SslPage';
 import { StatusPage } from './pages/StatusPage';
 import { AppLayout } from './components/AppLayout';
 import { getMe } from './services/api';
@@ -122,6 +123,14 @@ function App() {
           element={
             user
               ? <AppLayout userSlug={userSlug}><AlertsPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/ssl"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><SslPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
         />

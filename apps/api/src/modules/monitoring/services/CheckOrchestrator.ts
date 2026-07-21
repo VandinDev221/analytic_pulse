@@ -5,7 +5,7 @@ import {
   recordPingResult,
   setLastPingCycleDuration,
 } from '../../../observability/metrics';
-import { notifyStatusChange } from '../../../services/notificationService';
+import { notifyStatusChange, notifySslExpiring } from '../../../services/notificationService';
 import { AlertDispatcher } from '../../alerts/services/AlertDispatcher';
 import { AlertEvaluator } from '../../alerts/services/AlertEvaluator';
 import { PgAlertDeliveryRepository } from '../../alerts/repositories/PgAlertDeliveryRepository';
@@ -119,6 +119,7 @@ export class CheckOrchestrator {
     monitor: CheckableMonitor & {
       user_id: string;
       status: MonitorStatus;
+      ssl_last_warned_at?: string | null;
     },
     result: CheckResult
   ): Promise<number> {
@@ -139,7 +140,8 @@ export class CheckOrchestrator {
     await this.monitors.updateCheckResult(
       monitor.id,
       newStatus,
-      result.response_time_ms
+      result.response_time_ms,
+      result
     );
 
     recordPingResult(result.is_up);
@@ -160,6 +162,38 @@ export class CheckOrchestrator {
         monitorId: monitor.id,
         error: error instanceof Error ? error.message : String(error),
       });
+    }
+
+    // Aviso automático de renovação SSL (cooldown 24h)
+    if (result.check_type === 'ssl' && result.meta?.days_remaining != null) {
+      const days = Number(result.meta.days_remaining);
+      const warnDays = Number(monitor.ssl_warn_days ?? 30);
+      if (Number.isFinite(days) && days >= 0 && days <= warnDays) {
+        const lastWarned = monitor.ssl_last_warned_at
+          ? new Date(monitor.ssl_last_warned_at).getTime()
+          : 0;
+        const cooled = Date.now() - lastWarned > 24 * 60 * 60 * 1000;
+        if (cooled) {
+          try {
+            const sent = await notifySslExpiring(
+              monitor.user_id,
+              monitor.name,
+              monitor.url,
+              days,
+              (result.meta.valid_to as string | null) ?? null
+            );
+            if (sent) {
+              await this.monitors.markSslWarned(monitor.id);
+              inc('notifications_sent_total');
+            }
+          } catch (error) {
+            logger.warn('SSL expiry notification failed', {
+              monitorId: monitor.id,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+      }
     }
 
     if (statusChanged) {

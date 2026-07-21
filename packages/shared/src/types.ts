@@ -53,6 +53,16 @@ export interface Monitor {
   request_headers?: Record<string, string> | null;
   request_body?: string | null;
   region_code?: string | null;
+  ssl_issuer?: string | null;
+  ssl_subject?: string | null;
+  ssl_valid_from?: string | null;
+  ssl_valid_to?: string | null;
+  ssl_days_remaining?: number | null;
+  ssl_protocol?: string | null;
+  ssl_cipher?: string | null;
+  ssl_fingerprint?: string | null;
+  ssl_warn_days?: number | null;
+  ssl_last_warned_at?: string | null;
   created_at: string;
   last_checked_at?: string | null;
   last_response_time_ms?: number | null;
@@ -76,6 +86,7 @@ export interface CreateMonitorInput {
   request_headers?: Record<string, string>;
   request_body?: string;
   region_code?: string;
+  ssl_warn_days?: number;
 }
 
 export interface UpdateMonitorInput {
@@ -97,6 +108,7 @@ export interface UpdateMonitorInput {
   request_headers?: Record<string, string> | null;
   request_body?: string | null;
   region_code?: string | null;
+  ssl_warn_days?: number | null;
 }
 
 export interface TimingBreakdown {
@@ -394,7 +406,8 @@ export type AlertMetric =
   | 'status_up'
   | 'latency_ms'
   | 'http_status'
-  | 'is_up';
+  | 'is_up'
+  | 'ssl_days_remaining';
 
 export type AlertOperator = '>' | '>=' | '<' | '<=' | '==' | '!=';
 
@@ -727,4 +740,43 @@ export interface AnalyticsOverview {
   latency_series: AnalyticsLatencyPoint[];
   availability_series: AnalyticsAvailabilityPoint[];
   monitors: AnalyticsMonitorRow[];
+}
+
+// ── SSL (Fase 8) ──────────────────────────────────────────────
+
+export type SslHealthStatus = 'ok' | 'warning' | 'critical' | 'expired' | 'unknown';
+
+export interface SslCertificateInfo {
+  issuer: string | null;
+  subject: string | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  days_remaining: number | null;
+  protocol: string | null;
+  cipher: string | null;
+  fingerprint: string | null;
+}
+
+export interface SslMonitorRow extends SslCertificateInfo {
+  monitor_id: string;
+  name: string;
+  host: string | null;
+  port: number | null;
+  status: MonitorStatus;
+  warn_days: number;
+  health: SslHealthStatus;
+  last_checked_at: string | null;
+  last_response_time_ms: number | null;
+}
+
+export interface SslOverview {
+  summary: {
+    total: number;
+    ok: number;
+    warning: number;
+    critical: number;
+    expired: number;
+    unknown: number;
+  };
+  certificates: SslMonitorRow[];
 }

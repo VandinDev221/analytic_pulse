@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X, ShieldAlert, Zap, Globe, Map, BarChart3
+  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X, ShieldAlert, Zap, Globe, Map, BarChart3, Lock
 } from 'lucide-react';
 import {
   getNotificationSettings,
@@ -30,6 +30,15 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
   async function handleLogout() {
     localStorage.removeItem('pingpulse_token');
     window.dispatchEvent(new Event('auth-state-change'));
@@ -44,6 +53,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { path: '/analytics', label: 'Analytics', icon: <BarChart3 size={18} /> },
+    { path: '/ssl', label: 'SSL', icon: <Lock size={18} /> },
     { path: '/map', label: 'Mapa', icon: <Map size={18} /> },
     { path: '/incidents', label: 'Incidentes', icon: <ShieldAlert size={18} /> },
     { path: '/alerts', label: 'Alertas', icon: <Zap size={18} /> },

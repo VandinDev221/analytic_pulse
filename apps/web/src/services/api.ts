@@ -141,6 +141,13 @@ export async function getAnalyticsOverview(
   return res.json();
 }
 
+export async function getSslOverview(): Promise<import('../types').SslOverview> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/ssl/overview`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch SSL overview');
+  return res.json();
+}
+
 export async function getMonitor(id: string): Promise<Monitor> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { headers });

@@ -77,7 +77,7 @@ export const IncidentsPage: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div className="filter-tabs">
         {(
           [
             { id: 'active', label: 'Ativos' },
@@ -128,11 +128,11 @@ export const IncidentsPage: React.FC = () => {
                 width: '100%',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+              <div className="incident-list-card">
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                     <ShieldAlert size={16} color="var(--red)" />
-                    <span style={{ fontWeight: 650, fontSize: 15 }}>{incident.title}</span>
+                    <span style={{ fontWeight: 650, fontSize: 15, wordBreak: 'break-word' }}>{incident.title}</span>
                     <span className={`badge ${statusTone(incident.status)}`}>{incident.status}</span>
                     <span className="badge badge-unknown">{incident.severity}</span>
                   </div>
@@ -140,7 +140,7 @@ export const IncidentsPage: React.FC = () => {
                     {incident.affected_monitors.map((m) => m.name).join(', ') || 'Sem serviços'}
                   </div>
                 </div>
-                <div style={{ textAlign: 'right', flexShrink: 0, fontSize: 12, color: 'var(--text-muted)' }}>
+                <div className="incident-list-card__meta">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
                     <Clock size={12} />
                     {formatDuration(incident.duration_ms)}

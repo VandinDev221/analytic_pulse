@@ -80,7 +80,7 @@ export const DashboardPage: React.FC = () => {
   const allUp = s != null && s.monitors_down === 0 && s.monitors_total > 0;
 
   return (
-    <div className="page">
+    <div className="page page--wide">
       <div className="page-header">
         <div>
           <div className="page-header__title-row">

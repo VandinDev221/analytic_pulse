@@ -104,9 +104,9 @@ export const StatusPage: React.FC = () => {
   const border = theme === 'light' ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.08)';
 
   return (
-    <div style={{ minHeight: '100vh', background: bg, color: text, position: 'relative' }}>
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '48px 24px', position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
+    <div className="status-page-shell" style={{ background: bg, color: text, position: 'relative' }}>
+      <div className="status-page-inner" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="status-page-toolbar">
           <button
             type="button"
             className="btn btn-ghost"
@@ -150,7 +150,7 @@ export const StatusPage: React.FC = () => {
                 </span>
               </div>
 
-              <h1 style={{ fontSize: 30, fontWeight: 800, marginBottom: 8, letterSpacing: '-0.02em' }}>
+              <h1 className="status-page-title">
                 {data.profile.page_title || `${data.profile.display_name} Status`}
               </h1>
               {data.profile.page_description && (
@@ -161,12 +161,12 @@ export const StatusPage: React.FC = () => {
 
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: 10, marginTop: 22,
-                padding: '12px 24px', borderRadius: 99,
+                padding: '12px 20px', borderRadius: 99, maxWidth: '100%',
                 background: allOperational ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
                 border: `1px solid ${allOperational ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
               }}>
                 <span className={`pulse-dot ${allOperational ? 'pulse-dot-green' : 'pulse-dot-red'}`} />
-                <span style={{ fontSize: 15, fontWeight: 600, color: allOperational ? '#16a34a' : '#dc2626' }}>
+                <span style={{ fontSize: 'clamp(13px, 3.5vw, 15px)', fontWeight: 600, color: allOperational ? '#16a34a' : '#dc2626', textAlign: 'left' }}>
                   {allOperational ? 'Todos os sistemas operacionais' : 'Degradação detectada'}
                 </span>
               </div>
@@ -230,12 +230,12 @@ export const StatusPage: React.FC = () => {
 
                   return (
                     <div key={monitor.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 60}ms` }}>
-                      <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 14, padding: '20px 24px' }}>
+                      <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 14, padding: '16px 18px' }} className="status-monitor-card">
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            {isUp ? <CheckCircle size={16} color="#16a34a" /> : <XCircle size={16} color="#dc2626" />}
-                            <span style={{ fontWeight: 600, fontSize: 15 }}>{monitor.name}</span>
-                            <a href={monitor.url} target="_blank" rel="noopener noreferrer" style={{ color: muted, display: 'flex' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                            {isUp ? <CheckCircle size={16} color="#16a34a" style={{ flexShrink: 0 }} /> : <XCircle size={16} color="#dc2626" style={{ flexShrink: 0 }} />}
+                            <span style={{ fontWeight: 600, fontSize: 15, wordBreak: 'break-word' }}>{monitor.name}</span>
+                            <a href={monitor.url} target="_blank" rel="noopener noreferrer" style={{ color: muted, display: 'flex', flexShrink: 0 }}>
                               <ExternalLink size={12} />
                             </a>
                           </div>
@@ -303,7 +303,7 @@ export const StatusPage: React.FC = () => {
               <p style={{ fontSize: 13, color: muted, marginBottom: 12 }}>
                 Receba avisos quando houver incidentes nesta página.
               </p>
-              <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <form onSubmit={handleSubscribe} className="status-subscribe-form">
                 <input
                   className="input"
                   type="email"
@@ -311,7 +311,6 @@ export const StatusPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  style={{ flex: 1, minWidth: 200 }}
                 />
                 <button className="btn btn-primary" type="submit" disabled={subscribing}>
                   {subscribing ? 'Enviando...' : 'Assinar'}

@@ -59,6 +59,7 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
     json_path: monitor?.json_path ?? '',
     json_expected: monitor?.json_expected ?? '',
     region_code: monitor?.region_code ?? 'gru',
+    ssl_warn_days: monitor?.ssl_warn_days ?? 30,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -108,6 +109,8 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
         json_expected:
           httpMode && form.json_expected.trim() ? form.json_expected.trim() : undefined,
         region_code: form.region_code || 'gru',
+        ssl_warn_days:
+          form.check_type === 'ssl' ? Number(form.ssl_warn_days) || 30 : undefined,
       };
 
       const saved = isEdit
@@ -280,6 +283,22 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
                 ))}
               </select>
             </div>
+            {form.check_type === 'ssl' && (
+              <div className="form-group">
+                <label className="form-label">
+                  <Shield size={12} style={{ display: 'inline', marginRight: 4 }} />
+                  Aviso SSL (dias)
+                </label>
+                <input
+                  className="input"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={form.ssl_warn_days}
+                  onChange={(e) => set('ssl_warn_days', Number(e.target.value))}
+                />
+              </div>
+            )}
           </div>
 
           {httpMode && (

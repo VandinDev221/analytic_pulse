@@ -80,20 +80,19 @@ export const MonitorDetailPage: React.FC = () => {
                 }}>
                   <Activity size={22} color={isUp ? 'var(--green)' : 'var(--red)'} />
                 </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{monitor.name}</h1>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div className="detail-card__title-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, wordBreak: 'break-word' }}>{monitor.name}</h1>
                     <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
                       fontSize: 10, color: 'var(--green)', fontWeight: 600,
                       background: 'rgba(34,197,94,0.1)', borderRadius: 99, padding: '2px 8px',
                     }}>
                       <Radio size={9} /> Ao vivo
                     </span>
                   </div>
-                  <a href={monitor.url} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    {monitor.url} <ExternalLink size={11} />
+                  <a href={monitor.url} target="_blank" rel="noopener noreferrer" className="detail-url">
+                    <span style={{ minWidth: 0 }}>{monitor.url}</span> <ExternalLink size={11} style={{ flexShrink: 0 }} />
                   </a>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                     Tipo: <strong style={{ color: 'var(--text-secondary)' }}>{(monitor.check_type || 'http').toUpperCase()}</strong>
@@ -154,13 +153,86 @@ export const MonitorDetailPage: React.FC = () => {
             </div>
           </div>
 
+          {monitor.check_type === 'ssl' && (
+            <div className="glass detail-card" style={{ padding: 28, marginBottom: 20 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
+                Certificado SSL / TLS
+              </h2>
+              <div className="metrics-grid">
+                {[
+                  {
+                    label: 'Dias restantes',
+                    value:
+                      monitor.ssl_days_remaining != null
+                        ? String(monitor.ssl_days_remaining)
+                        : '—',
+                    color:
+                      monitor.ssl_days_remaining == null
+                        ? 'var(--text-muted)'
+                        : monitor.ssl_days_remaining < 0
+                          ? 'var(--red)'
+                          : monitor.ssl_days_remaining <= 7
+                            ? 'var(--red)'
+                            : monitor.ssl_days_remaining <= (monitor.ssl_warn_days ?? 30)
+                              ? 'var(--yellow)'
+                              : 'var(--green)',
+                  },
+                  {
+                    label: 'Válido até',
+                    value: monitor.ssl_valid_to
+                      ? new Date(monitor.ssl_valid_to).toLocaleDateString('pt-BR')
+                      : '—',
+                    color: 'var(--text-primary)',
+                  },
+                  {
+                    label: 'Protocolo',
+                    value: monitor.ssl_protocol || '—',
+                    color: 'var(--accent-light)',
+                  },
+                  {
+                    label: 'Cipher',
+                    value: monitor.ssl_cipher || '—',
+                    color: 'var(--text-secondary)',
+                  },
+                ].map((m) => (
+                  <div
+                    key={m.label}
+                    style={{
+                      background: 'var(--bg-base)',
+                      borderRadius: 10,
+                      padding: '14px 16px',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <div style={{ fontSize: 18, fontWeight: 700, color: m.color, marginBottom: 3 }}>
+                      {m.value}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 16, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                <div><strong>Issuer:</strong> {monitor.ssl_issuer || '—'}</div>
+                <div style={{ marginTop: 6 }}><strong>Subject:</strong> {monitor.ssl_subject || '—'}</div>
+                {monitor.ssl_fingerprint && (
+                  <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                    <strong>Fingerprint:</strong> {monitor.ssl_fingerprint}
+                  </div>
+                )}
+                <div style={{ marginTop: 6, color: 'var(--text-muted)' }}>
+                  Aviso automático em ≤ {monitor.ssl_warn_days ?? 30} dias
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Timing breakdown do último check */}
           {logs[0] && (
             <div className="glass detail-card" style={{ padding: 28, marginBottom: 20 }}>
               <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
                 Último check — timings
               </h2>
-              <div className="metrics-grid">
+              <div className="metrics-grid metrics-grid--timings">
                 {[
                   { label: 'DNS', value: logs[0].dns_ms },
                   { label: 'TCP', value: logs[0].tcp_ms },
@@ -217,18 +289,14 @@ export const MonitorDetailPage: React.FC = () => {
               </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {logs.filter(l => !l.is_up).slice(0, 10).map(log => (
-                  <div key={log.id} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '10px 14px', background: 'rgba(239,68,68,0.06)',
-                    border: '1px solid rgba(239,68,68,0.15)', borderRadius: 8,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ color: 'var(--red)', fontSize: 12 }}>⚠</span>
-                      <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                  <div key={log.id} className="incident-row">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      <span style={{ color: 'var(--red)', fontSize: 12, flexShrink: 0 }}>⚠</span>
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', wordBreak: 'break-word' }}>
                         {log.error_message ?? `HTTP ${log.status_code}`}
                       </span>
                     </div>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>
                       {new Date(log.created_at).toLocaleString('pt-BR')}
                     </span>
                   </div>

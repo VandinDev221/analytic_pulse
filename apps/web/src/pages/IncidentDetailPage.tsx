@@ -152,10 +152,10 @@ export const IncidentDetailPage: React.FC = () => {
         <>
           <div className="glass detail-card" style={{ padding: 28, marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <ShieldAlert size={22} color="var(--red)" />
-                  <h1 style={{ fontSize: 22, fontWeight: 700 }}>{incident.title}</h1>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="detail-card__title-row" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <ShieldAlert size={22} color="var(--red)" style={{ flexShrink: 0 }} />
+                  <h1 style={{ fontSize: 22, fontWeight: 700, wordBreak: 'break-word' }}>{incident.title}</h1>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
                   <span className="badge badge-down">{incident.status}</span>

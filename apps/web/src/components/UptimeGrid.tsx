@@ -42,7 +42,7 @@ export const UptimeGrid: React.FC<UptimeGridProps> = ({ days, totalDays = 90 }) 
           : 'Sem dados';
 
         return (
-          <div key={idx} className="tooltip-wrapper">
+          <div key={idx} className="tooltip-wrapper" title={label}>
             <div className={`uptime-cell ${colorClass}`} />
             <div className="tooltip" style={{ left: idx < 10 ? '0' : idx > 80 ? 'auto' : '50%', right: idx > 80 ? '0' : 'auto', transform: idx < 10 || idx > 80 ? 'none' : 'translateX(-50%)' }}>
               {label}

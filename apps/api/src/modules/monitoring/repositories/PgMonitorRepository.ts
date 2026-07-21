@@ -34,12 +34,12 @@ export class PgMonitorRepository implements MonitorRepository {
          user_id, name, url, method, interval_minutes, status, check_type,
          host, port, dns_record_type, keyword, expected_status_codes,
          expected_header_name, expected_header_value, json_path, json_expected,
-         request_headers, request_body, region_code
+         request_headers, request_body, region_code, ssl_warn_days
        ) VALUES (
          $1,$2,$3,$4,$5,'active',$6,
          $7,$8,$9,$10,$11::jsonb,
          $12,$13,$14,$15,
-         $16::jsonb,$17,$18
+         $16::jsonb,$17,$18,$19
        )
        RETURNING *`,
       [
@@ -61,6 +61,7 @@ export class PgMonitorRepository implements MonitorRepository {
         JSON.stringify(input.request_headers ?? {}),
         input.request_body ?? null,
         input.region_code ?? 'gru',
+        input.ssl_warn_days ?? 30,
       ]
     );
     return mapMonitor(result.rows[0]);
@@ -111,6 +112,7 @@ export class PgMonitorRepository implements MonitorRepository {
       ['json_expected', input.json_expected],
       ['request_body', input.request_body],
       ['region_code', input.region_code],
+      ['ssl_warn_days', input.ssl_warn_days],
     ];
 
     for (const [key, value] of scalarMap) {
@@ -160,31 +162,91 @@ export class PgMonitorRepository implements MonitorRepository {
   }
 
   async findDueForCheck(): Promise<
-    Array<CheckableMonitor & { user_id: string; status: MonitorStatus }>
+    Array<
+      CheckableMonitor & {
+        user_id: string;
+        status: MonitorStatus;
+        ssl_last_warned_at?: string | null;
+      }
+    >
   > {
-    const result = await query(
-      `SELECT id, user_id, name, url, method, status, check_type,
-              host, port, dns_record_type, keyword, expected_status_codes,
-              expected_header_name, expected_header_value, json_path, json_expected,
-              request_headers, request_body
-       FROM monitors
-       WHERE status != 'inactive'`
-    );
-    return result.rows.map((row) => {
-      const mapped = mapMonitor(row);
-      return {
-        ...mapped,
-        user_id: mapped.user_id,
-        status: mapped.status,
-      };
-    });
+    try {
+      const result = await query(
+        `SELECT id, user_id, name, url, method, status, check_type,
+                host, port, dns_record_type, keyword, expected_status_codes,
+                expected_header_name, expected_header_value, json_path, json_expected,
+                request_headers, request_body, ssl_warn_days, ssl_last_warned_at
+         FROM monitors
+         WHERE status != 'inactive'`
+      );
+      return result.rows.map((row) => {
+        const mapped = mapMonitor(row);
+        return {
+          ...mapped,
+          user_id: mapped.user_id,
+          status: mapped.status,
+          ssl_last_warned_at: mapped.ssl_last_warned_at ?? null,
+        };
+      });
+    } catch {
+      const result = await query(
+        `SELECT id, user_id, name, url, method, status, check_type,
+                host, port, dns_record_type, keyword, expected_status_codes,
+                expected_header_name, expected_header_value, json_path, json_expected,
+                request_headers, request_body
+         FROM monitors
+         WHERE status != 'inactive'`
+      );
+      return result.rows.map((row) => {
+        const mapped = mapMonitor(row);
+        return {
+          ...mapped,
+          user_id: mapped.user_id,
+          status: mapped.status,
+        };
+      });
+    }
   }
 
   async updateCheckResult(
     id: string,
     status: Extract<MonitorStatus, 'up' | 'down'>,
-    responseTimeMs: number
+    responseTimeMs: number,
+    result?: CheckResult
   ): Promise<void> {
+    if (result?.check_type === 'ssl' && result.meta) {
+      const meta = result.meta;
+      await query(
+        `UPDATE monitors
+         SET status = $1,
+             last_checked_at = NOW(),
+             last_response_time_ms = $2,
+             ssl_issuer = $3,
+             ssl_subject = $4,
+             ssl_valid_from = $5,
+             ssl_valid_to = $6,
+             ssl_days_remaining = $7,
+             ssl_protocol = $8,
+             ssl_cipher = $9,
+             ssl_fingerprint = $10
+         WHERE id = $11`,
+        [
+          status,
+          responseTimeMs,
+          (meta.issuer as string | null) ?? null,
+          (meta.subject as string | null) ?? null,
+          (meta.valid_from as string | null) ?? null,
+          (meta.valid_to as string | null) ?? null,
+          meta.days_remaining != null ? Number(meta.days_remaining) : null,
+          (meta.protocol as string | null) ?? null,
+          (meta.cipher as string | null) ?? null,
+          (meta.fingerprint as string | null) ?? null,
+          id,
+        ]
+      );
+      return;
+    }
+
     await query(
       `UPDATE monitors
        SET status = $1, last_checked_at = NOW(), last_response_time_ms = $2
@@ -193,16 +255,25 @@ export class PgMonitorRepository implements MonitorRepository {
     );
   }
 
+  async markSslWarned(id: string): Promise<void> {
+    await query(
+      `UPDATE monitors SET ssl_last_warned_at = NOW() WHERE id = $1`,
+      [id]
+    );
+  }
+
   async insertPingLog(monitorId: string, result: CheckResult): Promise<void> {
     await query(
       `INSERT INTO ping_logs (
          monitor_id, status_code, response_time_ms, is_up, error_message,
          check_type, dns_ms, tcp_ms, tls_ms, ttfb_ms, download_ms,
-         response_size_bytes, content_length, response_headers, redirect_chain
+         response_size_bytes, content_length, response_headers, redirect_chain,
+         ssl_meta
        ) VALUES (
          $1,$2,$3,$4,$5,
          $6,$7,$8,$9,$10,$11,
-         $12,$13,$14::jsonb,$15::jsonb
+         $12,$13,$14::jsonb,$15::jsonb,
+         $16::jsonb
        )`,
       [
         monitorId,
@@ -220,6 +291,9 @@ export class PgMonitorRepository implements MonitorRepository {
         result.content_length,
         result.response_headers ? JSON.stringify(result.response_headers) : null,
         result.redirect_chain ? JSON.stringify(result.redirect_chain) : null,
+        result.check_type === 'ssl' && result.meta
+          ? JSON.stringify(result.meta)
+          : null,
       ]
     );
   }

@@ -64,7 +64,7 @@ export const AnalyticsPage: React.FC = () => {
   const s = data?.summary;
 
   return (
-    <div className="page">
+    <div className="page page--wide">
       <div className="page-header">
         <div>
           <div className="page-header__title-row">

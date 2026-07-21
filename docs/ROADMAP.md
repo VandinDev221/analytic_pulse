@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 8 — SSL**.
+Próximo: **Fase 9 — DNS**.
 
 ---
 
@@ -109,7 +109,14 @@ Migration: [`database/migration_analytics_v1.sql`](../database/migration_analyti
 
 ## Fase 8 — SSL
 
-Validade, issuer, dias restantes, cipher, versão TLS, renovação, alertas automáticos.
+`✅` Validade, issuer, subject, fingerprint  
+`✅` Dias restantes, cipher, versão TLS  
+`✅` Limiar de renovação (`ssl_warn_days`) + aviso automático (24h)  
+`✅` Métrica de alerta `ssl_days_remaining`  
+`✅` Página `/ssl` + detalhe no monitor  
+`✅` API `GET /api/ssl/overview`  
+
+Migration: [`database/migration_ssl_v1.sql`](../database/migration_ssl_v1.sql)
 
 ---
 

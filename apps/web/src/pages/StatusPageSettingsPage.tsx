@@ -116,9 +116,11 @@ export const StatusPageSettingsPage: React.FC = () => {
           <h1 className="page-title">Status Page</h1>
           <p className="page-subtitle">Tema, SLA, domínio, manutenção e webhook</p>
         </div>
-        <a className="btn btn-ghost" href={`/status/${slug}`} target="_blank" rel="noreferrer">
-          <ExternalLink size={14} /> Ver página
-        </a>
+        <div className="page-header__actions">
+          <a className="btn btn-ghost" href={`/status/${slug}`} target="_blank" rel="noreferrer">
+            <ExternalLink size={14} /> Ver página
+          </a>
+        </div>
       </div>
 
       {error && <div className="alert alert--error" style={{ marginBottom: 16 }}>{error}</div>}
@@ -226,9 +228,9 @@ export const StatusPageSettingsPage: React.FC = () => {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {maintenance.map((m) => (
-            <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: 12, border: '1px solid var(--border)', borderRadius: 10 }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{m.title}</div>
+            <div key={m.id} className="maint-row" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: 12, border: '1px solid var(--border)', borderRadius: 10 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, wordBreak: 'break-word' }}>{m.title}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {new Date(m.starts_at).toLocaleString('pt-BR')} → {new Date(m.ends_at).toLocaleString('pt-BR')}
                 </div>

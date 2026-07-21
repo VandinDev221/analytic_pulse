@@ -172,6 +172,11 @@ export class AlertEvaluator {
       case 'http_status':
         if (result.status_code == null) return false;
         return compare(result.status_code, rule.operator, threshold);
+      case 'ssl_days_remaining': {
+        const days = result.meta?.days_remaining;
+        if (days == null || typeof days !== 'number') return false;
+        return compare(days, rule.operator, threshold);
+      }
       default:
         return false;
     }

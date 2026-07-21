@@ -76,9 +76,9 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({ monitor, onDeleted, on
             <Activity size={16} color="#818cf8" />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="monitor-card__name" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {monitor.name}
-              <span className="badge badge-unknown" style={{ fontSize: 9, textTransform: 'uppercase' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <span className="monitor-card__name">{monitor.name}</span>
+              <span className="badge badge-unknown" style={{ fontSize: 9, textTransform: 'uppercase', flexShrink: 0 }}>
                 {monitor.check_type || 'http'}
               </span>
             </div>

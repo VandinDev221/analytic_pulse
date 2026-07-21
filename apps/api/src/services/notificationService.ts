@@ -123,6 +123,60 @@ export async function notifyStatusChange(
   }
 }
 
+export async function notifySslExpiring(
+  userId: string,
+  monitorName: string,
+  monitorUrl: string,
+  daysRemaining: number,
+  validTo: string | null
+): Promise<boolean> {
+  try {
+    const settings = await loadSettings(userId);
+    if (!settings?.is_enabled) return false;
+    const validated = validateSettings(settings);
+    const channel = validated.notification_channel || 'telegram';
+    const timestamp = new Date().toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+    });
+    const text =
+      `🔐 SSL — ${monitorName}\n\n` +
+      `Certificado expira em ${daysRemaining} dia(s).\n` +
+      `URL: ${monitorUrl}\n` +
+      (validTo ? `Validade: ${validTo}\n` : '') +
+      `\nRenove o certificado para evitar downtime.\n` +
+      `${timestamp}\n— Analytic Pulse`;
+
+    if (channel === 'whatsapp') {
+      await sendWhatsAppMessage(
+        validated.whatsapp_phone!,
+        validated.whatsapp_api_key!,
+        text
+      );
+      return true;
+    }
+
+    const html =
+      `🔐 <b>SSL — ${monitorName}</b>\n\n` +
+      `Certificado expira em <b>${daysRemaining}</b> dia(s).\n` +
+      `🔗 <code>${monitorUrl}</code>\n` +
+      (validTo ? `📅 Validade: <code>${validTo}</code>\n` : '') +
+      `\nRenove o certificado para evitar downtime.\n` +
+      `\n⏰ ${timestamp}\n\n— <i>Analytic Pulse</i>`;
+
+    await sendTelegramMessage(
+      {
+        bot_token: validated.telegram_bot_token!,
+        chat_id: validated.telegram_chat_id!,
+      },
+      html
+    );
+    return true;
+  } catch (err) {
+    console.error('Failed to send SSL expiry notification:', err);
+    return false;
+  }
+}
+
 export async function sendTestNotification(userId: string): Promise<void> {
   await sendAlertNotification(
     userId,

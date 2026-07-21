@@ -40,6 +40,7 @@ const METRICS: Array<{ value: AlertMetric; label: string }> = [
   { value: 'status_up', label: 'Monitor recovered' },
   { value: 'latency_ms', label: 'Latency (ms)' },
   { value: 'http_status', label: 'HTTP status' },
+  { value: 'ssl_days_remaining', label: 'SSL days remaining' },
 ];
 
 const OPERATORS: AlertOperator[] = ['>', '>=', '<', '<=', '==', '!='];
@@ -188,7 +189,7 @@ export const AlertsPage: React.FC = () => {
             Regras, canais, cooldown, retry e escalonamento
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="page-header__actions">
           {tab === 'channels' && (
             <button className="btn btn-primary" onClick={() => setShowChannelForm(true)}>
               <Plus size={14} /> Canal
@@ -202,7 +203,7 @@ export const AlertsPage: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div className="filter-tabs">
         {(
           [
             { id: 'rules', label: 'Regras' },
@@ -234,9 +235,9 @@ export const AlertsPage: React.FC = () => {
             </div>
           )}
           {channels.map((ch) => (
-            <div key={ch.id} className="glass" style={{ padding: 16, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{ch.name}</div>
+            <div key={ch.id} className="glass channel-row" style={{ padding: 16, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, wordBreak: 'break-word' }}>{ch.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {ch.kind} · {ch.is_enabled ? 'ativo' : 'pausado'}
                 </div>
@@ -265,10 +266,10 @@ export const AlertsPage: React.FC = () => {
           )}
           {rules.map((rule) => (
             <div key={rule.id} className="glass" style={{ padding: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{rule.name}</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+              <div className="rule-row" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 4, wordBreak: 'break-word' }}>{rule.name}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', wordBreak: 'break-word' }}>
                     IF <code>{rule.metric}</code> {rule.operator}{' '}
                     {rule.threshold ?? '—'}
                     {rule.for_seconds > 0 ? ` FOR ${Math.round(rule.for_seconds / 60)} min` : ''}

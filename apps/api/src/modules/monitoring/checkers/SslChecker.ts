@@ -8,6 +8,19 @@ import {
   type Checker,
 } from './types';
 
+function dnToString(dn: unknown): string | null {
+  if (!dn || typeof dn !== 'object') return null;
+  const entries = Object.entries(dn as Record<string, unknown>)
+    .filter(([, v]) => v != null && String(v).length > 0)
+    .map(([k, v]) => `${k}=${v}`);
+  return entries.length ? entries.join(', ') : null;
+}
+
+function cipherToString(cipher: tls.CipherNameAndProtocol | undefined): string | null {
+  if (!cipher) return null;
+  return [cipher.name, cipher.version].filter(Boolean).join(' · ') || null;
+}
+
 export class SslChecker implements Checker {
   readonly type = 'ssl';
 
@@ -32,6 +45,8 @@ export class SslChecker implements Checker {
         () => {
           const totalMs = Date.now() - start;
           const cert = socket.getPeerCertificate();
+          const protocol = socket.getProtocol();
+          const cipher = socket.getCipher();
           socket.end();
 
           if (!cert || Object.keys(cert).length === 0) {
@@ -41,17 +56,30 @@ export class SslChecker implements Checker {
             return;
           }
 
+          const validFrom = cert.valid_from ? new Date(cert.valid_from) : null;
           const validTo = cert.valid_to ? new Date(cert.valid_to) : null;
           const daysRemaining = validTo
             ? Math.ceil((validTo.getTime() - Date.now()) / 86_400_000)
             : null;
           const expired = daysRemaining !== null && daysRemaining < 0;
+          const warnDays =
+            typeof (monitor as { ssl_warn_days?: number }).ssl_warn_days === 'number'
+              ? (monitor as { ssl_warn_days: number }).ssl_warn_days
+              : 30;
+          const expiringSoon =
+            !expired &&
+            daysRemaining !== null &&
+            daysRemaining <= warnDays;
 
           resolve({
             status_code: null,
             response_time_ms: totalMs,
             is_up: !expired,
-            error_message: expired ? 'CERTIFICATE_EXPIRED' : null,
+            error_message: expired
+              ? 'CERTIFICATE_EXPIRED'
+              : expiringSoon
+                ? 'CERTIFICATE_EXPIRING_SOON'
+                : null,
             check_type: 'ssl',
             timings: {
               dns_ms: null,
@@ -68,14 +96,15 @@ export class SslChecker implements Checker {
             meta: {
               host,
               port,
-              issuer: cert.issuer,
-              subject: cert.subject,
-              valid_from: cert.valid_from,
-              valid_to: cert.valid_to,
+              issuer: dnToString(cert.issuer),
+              subject: dnToString(cert.subject),
+              valid_from: validFrom ? validFrom.toISOString() : null,
+              valid_to: validTo ? validTo.toISOString() : null,
               days_remaining: daysRemaining,
-              fingerprint: cert.fingerprint,
-              protocol: socket.getProtocol(),
-              cipher: socket.getCipher(),
+              fingerprint: cert.fingerprint || null,
+              protocol: protocol || null,
+              cipher: cipherToString(cipher),
+              warn_days: warnDays,
             },
           });
         }

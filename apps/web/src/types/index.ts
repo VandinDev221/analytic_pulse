@@ -58,6 +58,10 @@ export type {
   AnalyticsAvailabilityPoint,
   AnalyticsMonitorRow,
   LatencyPercentiles,
+  SslOverview,
+  SslMonitorRow,
+  SslHealthStatus,
+  SslCertificateInfo,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';
