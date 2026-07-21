@@ -204,3 +204,100 @@ export interface NotificationSettings {
   whatsapp_api_key?: string;
   is_enabled: boolean;
 }
+
+// ── Incidents (Fase 2) ────────────────────────────────────────
+
+export type IncidentStatus =
+  | 'open'
+  | 'acknowledged'
+  | 'investigating'
+  | 'resolved';
+
+export type IncidentSeverity =
+  | 'critical'
+  | 'high'
+  | 'major'
+  | 'minor'
+  | 'low';
+
+export type IncidentTimelineEventType =
+  | 'monitor_down'
+  | 'monitor_up'
+  | 'alert_sent'
+  | 'incident_opened'
+  | 'incident_acknowledged'
+  | 'incident_investigating'
+  | 'incident_resolved'
+  | 'comment_added'
+  | 'note_updated'
+  | 'severity_changed'
+  | 'root_cause_updated'
+  | 'system';
+
+export interface AffectedMonitor {
+  id: string;
+  name: string;
+  url: string;
+  status: MonitorStatus;
+  check_type?: CheckType;
+}
+
+export interface Incident {
+  id: string;
+  user_id: string;
+  title: string;
+  status: IncidentStatus;
+  severity: IncidentSeverity;
+  root_cause: string | null;
+  notes: string | null;
+  tags: string[];
+  opened_at: string;
+  acknowledged_at: string | null;
+  recovered_at: string | null;
+  resolved_at: string | null;
+  acknowledged_by: string | null;
+  resolved_by: string | null;
+  created_at: string;
+  updated_at: string;
+  /** Duração em ms (até recovered_at ou now se aberto) */
+  duration_ms: number;
+  affected_monitors: AffectedMonitor[];
+}
+
+export interface IncidentTimelineEvent {
+  id: string;
+  incident_id: string;
+  event_type: IncidentTimelineEventType;
+  message: string;
+  actor_user_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface IncidentComment {
+  id: string;
+  incident_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+  author_email?: string | null;
+}
+
+export interface IncidentDetail extends Incident {
+  timeline: IncidentTimelineEvent[];
+  comments: IncidentComment[];
+}
+
+export interface UpdateIncidentInput {
+  title?: string;
+  severity?: IncidentSeverity;
+  root_cause?: string | null;
+  notes?: string | null;
+  tags?: string[];
+  status?: IncidentStatus;
+}
+
+export interface CreateIncidentCommentInput {
+  body: string;
+}

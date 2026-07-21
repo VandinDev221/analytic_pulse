@@ -227,3 +227,78 @@ export async function getStatusPage(slug: string) {
   if (!res.ok) throw new Error('Status page not found');
   return res.json();
 }
+
+// ── Incidents ─────────────────────────────────────────────────
+
+export async function getIncidents(
+  status: 'active' | 'all' | 'open' | 'acknowledged' | 'investigating' | 'resolved' = 'active'
+): Promise<import('../types').Incident[]> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/incidents?status=${status}`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch incidents');
+  return res.json();
+}
+
+export async function getIncident(id: string): Promise<import('../types').IncidentDetail> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/incidents/${id}`, { headers });
+  if (!res.ok) throw new Error('Incident not found');
+  return res.json();
+}
+
+export async function updateIncident(
+  id: string,
+  payload: import('../types').UpdateIncidentInput
+): Promise<import('../types').IncidentDetail> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/incidents/${id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to update incident');
+  }
+  return res.json();
+}
+
+export async function acknowledgeIncident(id: string) {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/incidents/${id}/acknowledge`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to acknowledge');
+  }
+  return res.json();
+}
+
+export async function resolveIncident(id: string) {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/incidents/${id}/resolve`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to resolve');
+  }
+  return res.json();
+}
+
+export async function addIncidentComment(id: string, body: string) {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/incidents/${id}/comments`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ body }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to comment');
+  }
+  return res.json();
+}

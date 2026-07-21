@@ -6,6 +6,8 @@ import {
   setLastPingCycleDuration,
 } from '../../../observability/metrics';
 import { notifyStatusChange } from '../../../services/notificationService';
+import { IncidentService } from '../../incidents/services/IncidentService';
+import { PgIncidentRepository } from '../../incidents/repositories/PgIncidentRepository';
 import { runCheck, runInBatches, type CheckableMonitor } from '../checkers';
 import type { MonitorRepository } from '../repositories/MonitorRepository';
 
@@ -27,7 +29,15 @@ function didStatusChange(previous: MonitorStatus, isUp: boolean): boolean {
 }
 
 export class CheckOrchestrator {
-  constructor(private readonly monitors: MonitorRepository) {}
+  private readonly incidents: IncidentService;
+
+  constructor(
+    private readonly monitors: MonitorRepository,
+    incidents?: IncidentService
+  ) {
+    this.incidents =
+      incidents ?? new IncidentService(new PgIncidentRepository());
+  }
 
   async runPingCycle(): Promise<PingCycleResult> {
     const startTime = Date.now();
@@ -108,15 +118,43 @@ export class CheckOrchestrator {
         from: monitor.status,
         to: newStatus,
       });
-      await notifyStatusChange(
-        monitor.user_id,
-        monitor.name,
-        monitor.url,
-        result.is_up,
-        result.status_code,
-        result.error_message
-      );
-      inc('notifications_sent_total');
+
+      let alertSent = false;
+      try {
+        await notifyStatusChange(
+          monitor.user_id,
+          monitor.name,
+          monitor.url,
+          result.is_up,
+          result.status_code,
+          result.error_message
+        );
+        alertSent = true;
+        inc('notifications_sent_total');
+      } catch (error) {
+        logger.warn('Notification failed during status change', {
+          monitorId: monitor.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      try {
+        await this.incidents.handleMonitorStatusChange({
+          userId: monitor.user_id,
+          monitorId: monitor.id,
+          monitorName: monitor.name,
+          monitorUrl: monitor.url,
+          isUp: result.is_up,
+          statusCode: result.status_code,
+          errorMessage: result.error_message,
+          alertSent,
+        });
+      } catch (error) {
+        logger.error('Incident lifecycle failed', {
+          monitorId: monitor.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   }
 }

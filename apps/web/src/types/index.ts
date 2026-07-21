@@ -1,4 +1,3 @@
-/** Re-exporta tipos do pacote compartilhado */
 export type {
   Monitor,
   MonitorStatus,
@@ -18,6 +17,14 @@ export type {
   CreateMonitorInput,
   UpdateMonitorInput,
   PingResult,
+  Incident,
+  IncidentDetail,
+  IncidentStatus,
+  IncidentSeverity,
+  IncidentTimelineEvent,
+  IncidentComment,
+  UpdateIncidentInput,
+  AffectedMonitor,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES } from '@analytic-pulse/shared';

@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { MonitorDetailPage } from './pages/MonitorDetailPage';
+import { IncidentsPage } from './pages/IncidentsPage';
+import { IncidentDetailPage } from './pages/IncidentDetailPage';
 import { StatusPage } from './pages/StatusPage';
 import { AppLayout } from './components/AppLayout';
 import { getMe } from './services/api';
@@ -92,6 +94,22 @@ function App() {
           element={
             user
               ? <AppLayout userSlug={userSlug}><MonitorDetailPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/incidents"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><IncidentsPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/incidents/:id"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><IncidentDetailPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
         />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X
+  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X, ShieldAlert
 } from 'lucide-react';
 import {
   getNotificationSettings,
@@ -43,6 +43,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+    { path: '/incidents', label: 'Incidentes', icon: <ShieldAlert size={18} /> },
   ];
 
   const sidebarContent = (
@@ -67,17 +68,23 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
       </div>
 
       <nav className="sidebar__nav">
-        {navItems.map(item => (
+        {navItems.map(item => {
+          const active =
+            item.path === '/'
+              ? location.pathname === '/'
+              : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+          return (
           <a
             key={item.path}
-            className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+            className={`nav-item ${active ? 'active' : ''}`}
             onClick={() => navigate(item.path)}
             style={{ cursor: 'pointer' }}
           >
             {item.icon}
             {item.label}
           </a>
-        ))}
+          );
+        })}
 
         <button
           type="button"

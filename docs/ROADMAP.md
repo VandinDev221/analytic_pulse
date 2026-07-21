@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 2 — Incident System**.
+Próximo: **Fase 3 — Alert Engine**.
 
 ---
 
@@ -32,25 +32,13 @@ Migration: [`database/migration_monitoring_v1.sql`](../database/migration_monito
 
 ## Fase 2 — Incident System
 
-Sistema profissional de incidentes.
+`✅` Modelo completo (status, severity, root cause, notes, tags, duration)  
+`✅` Serviços afetados (`incident_monitors`)  
+`✅` Timeline estilo GitHub (`incident_timeline_events`)  
+`✅` Comentários e acknowledge/resolve  
+`✅` Abertura/resolução automática no CheckOrchestrator  
 
-**Campos:** UUID, Status, Opened At, Recovered At, Duration, Affected Services, Severity, Root Cause, Notes, Timeline, Acknowledged By, Resolved By, Tags, Comentários, Histórico completo.
-
-**Timeline (estilo GitHub):**
-
-```
-14:00  Latency Increased
-  ↓
-14:03  API Timeout
-  ↓
-14:04  Telegram Alert
-  ↓
-14:06  Incident Opened
-  ↓
-14:12  Recovered
-  ↓
-14:13  AI Analysis
-```
+Migration: [`database/migration_incidents_v1.sql`](../database/migration_incidents_v1.sql)
 
 ---
 
