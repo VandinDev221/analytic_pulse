@@ -33,6 +33,11 @@ export type {
   AlertOperator,
   CreateAlertChannelInput,
   CreateAlertRuleInput,
+  StatusPageIncidentSummary,
+  StatusPageStats,
+  MaintenanceWindow,
+  UpdateStatusPageSettingsInput,
+  CreateMaintenanceInput,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES } from '@analytic-pulse/shared';

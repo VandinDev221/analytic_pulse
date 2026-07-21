@@ -375,3 +375,71 @@ export async function getAlertDeliveries(): Promise<import('../types').AlertDeli
   if (!res.ok) throw new Error('Failed to fetch deliveries');
   return res.json();
 }
+
+export async function subscribeStatusPage(slug: string, email: string) {
+  const res = await fetch(`${API}/status/${slug}/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha na inscrição');
+  }
+  return res.json() as Promise<{ message: string }>;
+}
+
+export async function getStatusPageSettings() {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/status-page/settings`, { headers });
+  if (!res.ok) throw new Error('Failed to load status page settings');
+  return res.json();
+}
+
+export async function updateStatusPageSettings(
+  payload: import('../types').UpdateStatusPageSettingsInput
+) {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/status-page/settings`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to save settings');
+  }
+  return res.json();
+}
+
+export async function listMaintenance(): Promise<import('../types').MaintenanceWindow[]> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/status-page/maintenance`, { headers });
+  if (!res.ok) throw new Error('Failed to load maintenance');
+  return res.json();
+}
+
+export async function createMaintenance(
+  payload: import('../types').CreateMaintenanceInput
+) {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/status-page/maintenance`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to create maintenance');
+  }
+  return res.json();
+}
+
+export async function deleteMaintenance(id: string): Promise<void> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/status-page/maintenance/${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) throw new Error('Failed to delete maintenance');
+}

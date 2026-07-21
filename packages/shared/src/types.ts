@@ -182,16 +182,89 @@ export interface StatusPageProfile {
   display_name: string;
   page_title: string;
   page_description: string;
+  slug?: string;
+  theme?: 'system' | 'light' | 'dark';
+  accent_color?: string | null;
+  logo_url?: string | null;
+  custom_domain?: string | null;
+  sla_target_pct?: number | null;
+  show_uptime_history?: boolean;
+  show_incidents?: boolean;
+  show_maintenance?: boolean;
 }
 
 export interface StatusPageMonitor extends Monitor {
   uptime_90d: string | null;
+  avg_latency_7d?: number | null;
+}
+
+export interface StatusPageIncidentSummary {
+  id: string;
+  title: string;
+  status: IncidentStatus;
+  severity: IncidentSeverity;
+  opened_at: string;
+  recovered_at: string | null;
+  resolved_at: string | null;
+  duration_ms: number;
+  affected_monitor_names: string[];
+}
+
+export interface MaintenanceWindow {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  starts_at: string;
+  ends_at: string;
+  status: 'scheduled' | 'active' | 'completed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StatusPageStats {
+  overall_uptime_90d: number | null;
+  avg_latency_7d: number | null;
+  sla_target_pct: number;
+  sla_met: boolean | null;
+  open_incidents: number;
+  mttr_ms: number | null;
 }
 
 export interface StatusPageData {
   profile: StatusPageProfile;
   monitors: StatusPageMonitor[];
   uptime_grids: Record<string, UptimeDay[]>;
+  incidents?: StatusPageIncidentSummary[];
+  maintenance?: MaintenanceWindow[];
+  stats?: StatusPageStats;
+}
+
+export interface UpdateStatusPageSettingsInput {
+  display_name?: string;
+  page_title?: string | null;
+  page_description?: string | null;
+  slug?: string;
+  theme?: 'system' | 'light' | 'dark';
+  accent_color?: string | null;
+  logo_url?: string | null;
+  custom_domain?: string | null;
+  sla_target_pct?: number | null;
+  show_uptime_history?: boolean;
+  show_incidents?: boolean;
+  show_maintenance?: boolean;
+  webhook_url?: string | null;
+}
+
+export interface CreateMaintenanceInput {
+  title: string;
+  description?: string;
+  starts_at: string;
+  ends_at: string;
+}
+
+export interface SubscribeStatusPageInput {
+  email: string;
 }
 
 export type NotificationChannel = 'telegram' | 'whatsapp';

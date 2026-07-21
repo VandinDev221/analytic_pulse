@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 4 — Status Pages**.
+Próximo: **Fase 5 — Dashboard**.
 
 ---
 
@@ -56,7 +56,14 @@ Migration: [`database/migration_alerts_v1.sql`](../database/migration_alerts_v1.
 
 ## Fase 4 — Status Pages
 
-Dark mode, histórico, incidentes, calendário de manutenção, SLA, tempo médio, assinatura de notificações, RSS, webhook, domínio personalizado, tema customizado.
+`✅` Dark/Light mode + tema customizado (accent, logo)  
+`✅` Histórico, incidentes públicos, calendário de manutenção  
+`✅` SLA target, uptime médio, latência, MTTR  
+`✅` Assinatura por e-mail + RSS  
+`✅` Webhook + domínio personalizado (campo)  
+`✅` Painel `/status-page` para configuração  
+
+Migration: [`database/migration_status_pages_v1.sql`](../database/migration_status_pages_v1.sql)
 
 ---
 
