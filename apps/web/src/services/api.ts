@@ -111,6 +111,13 @@ export async function getMonitors(): Promise<Monitor[]> {
   return res.json();
 }
 
+export async function getDashboardOverview(): Promise<import('../types').DashboardOverview> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/dashboard/overview`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch dashboard overview');
+  return res.json();
+}
+
 export async function getMonitor(id: string): Promise<Monitor> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { headers });

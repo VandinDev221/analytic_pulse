@@ -38,6 +38,14 @@ export type {
   MaintenanceWindow,
   UpdateStatusPageSettingsInput,
   CreateMaintenanceInput,
+  DashboardOverview,
+  DashboardSummary,
+  DashboardHeatmapRow,
+  DashboardTimelineItem,
+  DashboardTopIncident,
+  DashboardTopLatency,
+  DashboardUsage,
+  DashboardTrend,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES } from '@analytic-pulse/shared';

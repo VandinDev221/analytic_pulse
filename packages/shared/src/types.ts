@@ -509,3 +509,96 @@ export interface AlertDelivery {
   fired_at: string | null;
   created_at: string;
 }
+
+// ── Dashboard (Fase 5) ────────────────────────────────────────
+
+export interface DashboardTrend {
+  /** Delta percentual vs período anterior (positivo = piora para latência/incidentes) */
+  pct: number | null;
+  direction: 'up' | 'down' | 'flat' | 'unknown';
+}
+
+export interface DashboardSummary {
+  monitors_total: number;
+  monitors_up: number;
+  monitors_down: number;
+  monitors_unknown: number;
+  overall_uptime_90d: number | null;
+  overall_uptime_7d: number | null;
+  avg_latency_7d: number | null;
+  avg_latency_prev_7d: number | null;
+  latency_trend: DashboardTrend;
+  uptime_trend: DashboardTrend;
+  sla_target_pct: number;
+  sla_met: boolean | null;
+  open_incidents: number;
+  mttr_ms: number | null;
+  checks_24h: number;
+  checks_7d: number;
+  checks_30d: number;
+}
+
+export interface DashboardTopLatency {
+  monitor_id: string;
+  name: string;
+  status: MonitorStatus;
+  avg_latency_7d: number;
+  uptime_90d: number | null;
+}
+
+export interface DashboardTopIncident {
+  id: string;
+  title: string;
+  status: IncidentStatus;
+  severity: IncidentSeverity;
+  opened_at: string;
+  duration_ms: number;
+  affected_monitor_names: string[];
+}
+
+export interface DashboardHeatmapRow {
+  monitor_id: string;
+  name: string;
+  status: MonitorStatus;
+  uptime_90d: number | null;
+  days: UptimeDay[];
+}
+
+export type DashboardTimelineKind =
+  | 'incident_opened'
+  | 'incident_resolved'
+  | 'incident_acknowledged'
+  | 'maintenance'
+  | 'alert'
+  | 'monitor_down'
+  | 'monitor_up';
+
+export interface DashboardTimelineItem {
+  id: string;
+  kind: DashboardTimelineKind;
+  title: string;
+  subtitle: string | null;
+  at: string;
+  href?: string | null;
+  severity?: IncidentSeverity | null;
+}
+
+export interface DashboardUsagePoint {
+  label: string;
+  checks: number;
+}
+
+export interface DashboardUsage {
+  daily: DashboardUsagePoint[];
+  weekly: DashboardUsagePoint[];
+  monthly: DashboardUsagePoint[];
+}
+
+export interface DashboardOverview {
+  summary: DashboardSummary;
+  top_latencies: DashboardTopLatency[];
+  top_incidents: DashboardTopIncident[];
+  heatmap: DashboardHeatmapRow[];
+  timeline: DashboardTimelineItem[];
+  usage: DashboardUsage;
+}

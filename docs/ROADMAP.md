@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 5 — Dashboard**.
+Próximo: **Fase 6 — Mapa Mundial**.
 
 ---
 
@@ -69,10 +69,15 @@ Migration: [`database/migration_status_pages_v1.sql`](../database/migration_stat
 
 ## Fase 5 — Dashboard
 
-Redesenho completo. Referências: Stripe, Linear, Cloudflare, Vercel, Grafana, Datadog.
+`✅` Cards inteligentes (contexto + tendência)  
+`✅` Heatmap de uptime (90d)  
+`✅` Timeline de eventos  
+`✅` Top latências / top incidentes  
+`✅` Disponibilidade, SLA, MTTR, performance  
+`✅` Uso diário / semanal / mensal  
+`✅` API `GET /api/dashboard/overview`  
 
-Cards inteligentes, heatmaps, timeline, mapas, top latências, top incidentes, disponibilidade, SLA, performance, uso diário/semanal/mensal.
-
+Referências: Stripe, Linear, Cloudflare, Vercel, Grafana, Datadog.  
 Ver [UI_GUIDELINES.md](./UI_GUIDELINES.md).
 
 ---
