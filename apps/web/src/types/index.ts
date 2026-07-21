@@ -51,6 +51,13 @@ export type {
   MapRegion,
   MapRegionAggregate,
   MapLink,
+  AnalyticsOverview,
+  AnalyticsRange,
+  AnalyticsSummary,
+  AnalyticsLatencyPoint,
+  AnalyticsAvailabilityPoint,
+  AnalyticsMonitorRow,
+  LatencyPercentiles,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';

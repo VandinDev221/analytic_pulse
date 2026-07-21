@@ -670,3 +670,61 @@ export interface MapOverview {
   nodes: MapServiceNode[];
   links: MapLink[];
 }
+
+// ── Analytics (Fase 7) ────────────────────────────────────────
+
+export type AnalyticsRange = '7d' | '30d' | '90d';
+
+export interface LatencyPercentiles {
+  avg_ms: number | null;
+  p50_ms: number | null;
+  p95_ms: number | null;
+  p99_ms: number | null;
+  samples: number;
+}
+
+export interface AnalyticsSummary {
+  range: AnalyticsRange;
+  availability_pct: number | null;
+  latency: LatencyPercentiles;
+  mttr_ms: number | null;
+  mtbf_ms: number | null;
+  checks_total: number;
+  checks_up: number;
+  checks_down: number;
+  incidents_total: number;
+  incidents_open: number;
+}
+
+export interface AnalyticsLatencyPoint {
+  bucket: string;
+  avg_ms: number | null;
+  p50_ms: number | null;
+  p95_ms: number | null;
+  p99_ms: number | null;
+  samples: number;
+}
+
+export interface AnalyticsAvailabilityPoint {
+  day: string;
+  uptime_pct: number;
+  total_pings: number;
+  up_pings: number;
+}
+
+export interface AnalyticsMonitorRow {
+  monitor_id: string;
+  name: string;
+  status: MonitorStatus;
+  availability_pct: number | null;
+  latency: LatencyPercentiles;
+  checks_total: number;
+  incidents: number;
+}
+
+export interface AnalyticsOverview {
+  summary: AnalyticsSummary;
+  latency_series: AnalyticsLatencyPoint[];
+  availability_series: AnalyticsAvailabilityPoint[];
+  monitors: AnalyticsMonitorRow[];
+}

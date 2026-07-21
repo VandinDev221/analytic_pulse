@@ -8,6 +8,7 @@ import { IncidentDetailPage } from './pages/IncidentDetailPage';
 import { AlertsPage } from './pages/AlertsPage';
 import { StatusPageSettingsPage } from './pages/StatusPageSettingsPage';
 import { MapPage } from './pages/MapPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
 import { StatusPage } from './pages/StatusPage';
 import { AppLayout } from './components/AppLayout';
 import { getMe } from './services/api';
@@ -121,6 +122,14 @@ function App() {
           element={
             user
               ? <AppLayout userSlug={userSlug}><AlertsPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><AnalyticsPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
         />

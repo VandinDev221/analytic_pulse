@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 7 — Analytics**.
+Próximo: **Fase 8 — SSL**.
 
 ---
 
@@ -96,7 +96,14 @@ Migration: [`database/migration_map_v1.sql`](../database/migration_map_v1.sql)
 
 ## Fase 7 — Analytics
 
-Média, P95, P99, latência, disponibilidade, MTTR, MTBF, gráficos profissionais.
+`✅` Média, P50, P95, P99 de latência  
+`✅` Disponibilidade (uptime)  
+`✅` MTTR e MTBF  
+`✅` Séries temporais + tabela por monitor  
+`✅` Ranges 7d / 30d / 90d · página `/analytics`  
+`✅` API `GET /api/analytics/overview`  
+
+Migration: [`database/migration_analytics_v1.sql`](../database/migration_analytics_v1.sql)
 
 ---
 

@@ -132,6 +132,15 @@ export async function getMapRegions(): Promise<import('../types').MapRegion[]> {
   return res.json();
 }
 
+export async function getAnalyticsOverview(
+  range: import('../types').AnalyticsRange = '30d'
+): Promise<import('../types').AnalyticsOverview> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/analytics/overview?range=${range}`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch analytics');
+  return res.json();
+}
+
 export async function getMonitor(id: string): Promise<Monitor> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { headers });
