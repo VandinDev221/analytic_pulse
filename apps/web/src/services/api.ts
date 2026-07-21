@@ -118,6 +118,20 @@ export async function getDashboardOverview(): Promise<import('../types').Dashboa
   return res.json();
 }
 
+export async function getMapOverview(): Promise<import('../types').MapOverview> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/map/overview`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch map overview');
+  return res.json();
+}
+
+export async function getMapRegions(): Promise<import('../types').MapRegion[]> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/map/regions`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch map regions');
+  return res.json();
+}
+
 export async function getMonitor(id: string): Promise<Monitor> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { headers });

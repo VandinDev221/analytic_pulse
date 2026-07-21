@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 6 — Mapa Mundial**.
+Próximo: **Fase 7 — Analytics**.
 
 ---
 
@@ -84,7 +84,13 @@ Ver [UI_GUIDELINES.md](./UI_GUIDELINES.md).
 
 ## Fase 6 — Mapa Mundial
 
-Mapa interativo: nós, latência, serviços, heartbeat, animações suaves.
+`✅` Mapa interativo (Equal Earth + landmass)  
+`✅` Nós por serviço com status e latência  
+`✅` Heartbeat animado + links entre regiões  
+`✅` Catálogo `map_regions` + `monitors.region_code`  
+`✅` Página `/map` + API `GET /api/map/overview`  
+
+Migration: [`database/migration_map_v1.sql`](../database/migration_map_v1.sql)
 
 ---
 

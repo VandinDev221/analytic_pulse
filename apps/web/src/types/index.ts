@@ -46,6 +46,11 @@ export type {
   DashboardTopLatency,
   DashboardUsage,
   DashboardTrend,
+  MapOverview,
+  MapServiceNode,
+  MapRegion,
+  MapRegionAggregate,
+  MapLink,
 } from '@analytic-pulse/shared';
 
-export { CHECK_TYPES } from '@analytic-pulse/shared';
+export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';

@@ -65,6 +65,7 @@ O Render permite **apenas 1 Postgres gratuito** por workspace. Escolha uma opç�
    Para a Fase 2 (incidentes), execute [`database/migration_incidents_v1.sql`](database/migration_incidents_v1.sql).
    Para a Fase 3 (Alert Engine), execute [`database/migration_alerts_v1.sql`](database/migration_alerts_v1.sql).
    Para a Fase 4 (Status Pages), execute [`database/migration_status_pages_v1.sql`](database/migration_status_pages_v1.sql).
+   Para a Fase 6 (Mapa Mundial), execute [`database/migration_map_v1.sql`](database/migration_map_v1.sql).
 
 **Opção B — Neon (recomendado se já tem Postgres no Render)**
 

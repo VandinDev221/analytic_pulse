@@ -34,12 +34,12 @@ export class PgMonitorRepository implements MonitorRepository {
          user_id, name, url, method, interval_minutes, status, check_type,
          host, port, dns_record_type, keyword, expected_status_codes,
          expected_header_name, expected_header_value, json_path, json_expected,
-         request_headers, request_body
+         request_headers, request_body, region_code
        ) VALUES (
          $1,$2,$3,$4,$5,'active',$6,
          $7,$8,$9,$10,$11::jsonb,
          $12,$13,$14,$15,
-         $16::jsonb,$17
+         $16::jsonb,$17,$18
        )
        RETURNING *`,
       [
@@ -60,6 +60,7 @@ export class PgMonitorRepository implements MonitorRepository {
         input.json_expected ?? null,
         JSON.stringify(input.request_headers ?? {}),
         input.request_body ?? null,
+        input.region_code ?? 'gru',
       ]
     );
     return mapMonitor(result.rows[0]);
@@ -109,6 +110,7 @@ export class PgMonitorRepository implements MonitorRepository {
       ['json_path', input.json_path],
       ['json_expected', input.json_expected],
       ['request_body', input.request_body],
+      ['region_code', input.region_code],
     ];
 
     for (const [key, value] of scalarMap) {

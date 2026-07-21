@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { X, Globe, Tag, RefreshCw, Shield, Server } from 'lucide-react';
 import { createMonitor, updateMonitor } from '../services/api';
 import type { CheckType, DnsRecordType, Monitor } from '../types';
+import { MAP_REGIONS } from '../types';
 
 interface MonitorModalProps {
   onClose: () => void;
@@ -57,6 +58,7 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
     expected_header_value: monitor?.expected_header_value ?? '',
     json_path: monitor?.json_path ?? '',
     json_expected: monitor?.json_expected ?? '',
+    region_code: monitor?.region_code ?? 'gru',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -105,6 +107,7 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
         json_path: httpMode && form.json_path.trim() ? form.json_path.trim() : undefined,
         json_expected:
           httpMode && form.json_expected.trim() ? form.json_expected.trim() : undefined,
+        region_code: form.region_code || 'gru',
       };
 
       const saved = isEdit
@@ -258,6 +261,23 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
                 <option value={10}>10 minutos</option>
                 <option value={30}>30 minutos</option>
                 <option value={60}>1 hora</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">
+                <Globe size={12} style={{ display: 'inline', marginRight: 4 }} />
+                Região no mapa
+              </label>
+              <select
+                className="input"
+                value={form.region_code}
+                onChange={(e) => set('region_code', e.target.value)}
+              >
+                {MAP_REGIONS.map((r) => (
+                  <option key={r.code} value={r.code}>
+                    {r.city || r.name} ({r.code.toUpperCase()})
+                  </option>
+                ))}
               </select>
             </div>
           </div>

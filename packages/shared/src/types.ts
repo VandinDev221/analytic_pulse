@@ -52,6 +52,7 @@ export interface Monitor {
   json_expected?: string | null;
   request_headers?: Record<string, string> | null;
   request_body?: string | null;
+  region_code?: string | null;
   created_at: string;
   last_checked_at?: string | null;
   last_response_time_ms?: number | null;
@@ -74,6 +75,7 @@ export interface CreateMonitorInput {
   json_expected?: string;
   request_headers?: Record<string, string>;
   request_body?: string;
+  region_code?: string;
 }
 
 export interface UpdateMonitorInput {
@@ -94,6 +96,7 @@ export interface UpdateMonitorInput {
   json_expected?: string | null;
   request_headers?: Record<string, string> | null;
   request_body?: string | null;
+  region_code?: string | null;
 }
 
 export interface TimingBreakdown {
@@ -601,4 +604,69 @@ export interface DashboardOverview {
   heatmap: DashboardHeatmapRow[];
   timeline: DashboardTimelineItem[];
   usage: DashboardUsage;
+}
+
+// ── World Map (Fase 6) ────────────────────────────────────────
+
+export interface MapRegion {
+  code: string;
+  name: string;
+  city: string | null;
+  country_code: string;
+  latitude: number;
+  longitude: number;
+}
+
+export const MAP_REGIONS: MapRegion[] = [
+  { code: 'gru', name: 'América do Sul', city: 'São Paulo', country_code: 'BR', latitude: -23.5505, longitude: -46.6333 },
+  { code: 'iad', name: 'Leste dos EUA', city: 'Ashburn', country_code: 'US', latitude: 39.0438, longitude: -77.4874 },
+  { code: 'sfo', name: 'Oeste dos EUA', city: 'San Francisco', country_code: 'US', latitude: 37.7749, longitude: -122.4194 },
+  { code: 'lhr', name: 'Europa Oeste', city: 'Londres', country_code: 'GB', latitude: 51.5074, longitude: -0.1278 },
+  { code: 'fra', name: 'Europa Central', city: 'Frankfurt', country_code: 'DE', latitude: 50.1109, longitude: 8.6821 },
+  { code: 'cdg', name: 'Europa Sul', city: 'Paris', country_code: 'FR', latitude: 48.8566, longitude: 2.3522 },
+  { code: 'sin', name: 'Sudeste Asiático', city: 'Singapura', country_code: 'SG', latitude: 1.3521, longitude: 103.8198 },
+  { code: 'nrt', name: 'Ásia Leste', city: 'Tóquio', country_code: 'JP', latitude: 35.6762, longitude: 139.6503 },
+  { code: 'syd', name: 'Oceania', city: 'Sydney', country_code: 'AU', latitude: -33.8688, longitude: 151.2093 },
+  { code: 'dxb', name: 'Oriente Médio', city: 'Dubai', country_code: 'AE', latitude: 25.2048, longitude: 55.2708 },
+];
+
+export interface MapServiceNode {
+  id: string;
+  name: string;
+  status: MonitorStatus;
+  check_type: CheckType;
+  region_code: string;
+  latitude: number;
+  longitude: number;
+  last_response_time_ms: number | null;
+  last_checked_at: string | null;
+  interval_minutes: number;
+  /** true se o último check está dentro da janela esperada */
+  heartbeat_alive: boolean;
+}
+
+export interface MapRegionAggregate {
+  region: MapRegion;
+  monitors_total: number;
+  monitors_up: number;
+  monitors_down: number;
+  avg_latency_ms: number | null;
+}
+
+export interface MapLink {
+  from_region: string;
+  to_region: string;
+}
+
+export interface MapOverview {
+  summary: {
+    monitors_total: number;
+    monitors_up: number;
+    monitors_down: number;
+    avg_latency_ms: number | null;
+    regions_active: number;
+  };
+  regions: MapRegionAggregate[];
+  nodes: MapServiceNode[];
+  links: MapLink[];
 }
