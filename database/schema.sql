@@ -75,6 +75,19 @@ CREATE TABLE IF NOT EXISTS monitors (
   interval_minutes        INTEGER      DEFAULT 5,
   status                  VARCHAR(20)  DEFAULT 'active',
   -- 'active' | 'inactive' | 'up' | 'down'
+  check_type              VARCHAR(20)  NOT NULL DEFAULT 'http',
+  -- 'http' | 'https' | 'tcp' | 'port' | 'ping' | 'dns' | 'ssl'
+  host                    VARCHAR(255),
+  port                    INTEGER,
+  dns_record_type         VARCHAR(10)  DEFAULT 'A',
+  keyword                 TEXT,
+  expected_status_codes   JSONB        DEFAULT '[200,201,202,204,301,302,304]'::jsonb,
+  expected_header_name    VARCHAR(120),
+  expected_header_value   TEXT,
+  json_path               TEXT,
+  json_expected           TEXT,
+  request_headers         JSONB        DEFAULT '{}'::jsonb,
+  request_body            TEXT,
   last_checked_at         TIMESTAMPTZ,
   last_response_time_ms   INTEGER,
   created_at              TIMESTAMPTZ  DEFAULT TIMEZONE('utc', NOW())
@@ -84,17 +97,28 @@ CREATE TABLE IF NOT EXISTS monitors (
 CREATE INDEX IF NOT EXISTS idx_monitors_user_id ON monitors(user_id);
 -- Index for cron job query (fetch only active monitors)
 CREATE INDEX IF NOT EXISTS idx_monitors_status  ON monitors(status);
+CREATE INDEX IF NOT EXISTS idx_monitors_check_type ON monitors(check_type);
 
 
 -- ── 4. Ping Logs (historical check results) ───────────────────
 CREATE TABLE IF NOT EXISTS ping_logs (
-  id                BIGSERIAL PRIMARY KEY,
-  monitor_id        UUID    NOT NULL REFERENCES monitors(id) ON DELETE CASCADE,
-  status_code       INTEGER,                -- HTTP response code (null on network error)
-  response_time_ms  INTEGER NOT NULL,
-  is_up             BOOLEAN NOT NULL,
-  error_message     TEXT,
-  created_at        TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+  id                  BIGSERIAL PRIMARY KEY,
+  monitor_id          UUID    NOT NULL REFERENCES monitors(id) ON DELETE CASCADE,
+  status_code         INTEGER,
+  response_time_ms    INTEGER NOT NULL,
+  is_up               BOOLEAN NOT NULL,
+  error_message       TEXT,
+  check_type          VARCHAR(20),
+  dns_ms              INTEGER,
+  tcp_ms              INTEGER,
+  tls_ms              INTEGER,
+  ttfb_ms             INTEGER,
+  download_ms         INTEGER,
+  response_size_bytes INTEGER,
+  content_length      INTEGER,
+  response_headers    JSONB,
+  redirect_chain      JSONB,
+  created_at          TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
 -- Critical indexes for fast aggregation queries

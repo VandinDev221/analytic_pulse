@@ -1,12 +1,12 @@
-import type { MonitorStatus, PingResult } from '@analytic-pulse/shared';
+import type { CheckResult, MonitorStatus } from '@analytic-pulse/shared';
 import { logger } from '../../../observability/logger';
 import {
   inc,
   recordPingResult,
   setLastPingCycleDuration,
 } from '../../../observability/metrics';
-import { pingUrl, runInBatches } from '../../../services/pingService';
 import { notifyStatusChange } from '../../../services/notificationService';
+import { runCheck, runInBatches, type CheckableMonitor } from '../checkers';
 import type { MonitorRepository } from '../repositories/MonitorRepository';
 
 export interface PingCycleResult {
@@ -16,10 +16,7 @@ export interface PingCycleResult {
   elapsed_ms: number;
 }
 
-function didStatusChange(
-  previous: MonitorStatus,
-  isUp: boolean
-): boolean {
+function didStatusChange(previous: MonitorStatus, isUp: boolean): boolean {
   if (previous === 'active') {
     return !isUp;
   }
@@ -45,7 +42,7 @@ export class CheckOrchestrator {
     log.info('Active monitors loaded', { count: monitors.length });
 
     const tasks = monitors.map((monitor) => async () => {
-      const result = await pingUrl(monitor.url);
+      const result = await runCheck(monitor);
       await this.persistCheck(monitor, result);
       return { monitorId: monitor.id, name: monitor.name, ...result };
     });
@@ -75,14 +72,11 @@ export class CheckOrchestrator {
   }
 
   private async persistCheck(
-    monitor: {
-      id: string;
+    monitor: CheckableMonitor & {
       user_id: string;
-      name: string;
-      url: string;
       status: MonitorStatus;
     },
-    result: PingResult
+    result: CheckResult
   ): Promise<void> {
     try {
       await this.monitors.insertPingLog(monitor.id, result);
@@ -90,6 +84,7 @@ export class CheckOrchestrator {
       logger.error('Failed to save ping log', {
         monitorId: monitor.id,
         url: monitor.url,
+        check_type: result.check_type,
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -109,6 +104,7 @@ export class CheckOrchestrator {
       logger.info('Monitor status changed', {
         monitorId: monitor.id,
         name: monitor.name,
+        check_type: result.check_type,
         from: monitor.status,
         to: newStatus,
       });

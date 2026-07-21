@@ -76,16 +76,30 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({ monitor, onDeleted, on
             <Activity size={16} color="#818cf8" />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="monitor-card__name">{monitor.name}</div>
-            <a
-              href={monitor.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="monitor-card__url"
-            >
-              <span>{monitor.url}</span>
-              <ExternalLink size={10} style={{ flexShrink: 0 }} />
-            </a>
+            <div className="monitor-card__name" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {monitor.name}
+              <span className="badge badge-unknown" style={{ fontSize: 9, textTransform: 'uppercase' }}>
+                {monitor.check_type || 'http'}
+              </span>
+            </div>
+            {monitor.check_type === 'http' || monitor.check_type === 'https' || !monitor.check_type ? (
+              <a
+                href={monitor.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="monitor-card__url"
+              >
+                <span>{monitor.url}</span>
+                <ExternalLink size={10} style={{ flexShrink: 0 }} />
+              </a>
+            ) : (
+              <div className="monitor-card__url">
+                <span>
+                  {monitor.host || monitor.url}
+                  {monitor.port ? `:${monitor.port}` : ''}
+                </span>
+              </div>
+            )}
           </div>
         </div>
         <StatusBadge status={monitor.status} />

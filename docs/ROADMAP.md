@@ -14,21 +14,19 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 1 — Monitoring** (protocolos e timings além de HTTP).
+Próximo: **Fase 2 — Incident System**.
 
 ---
 
 ## Fase 1 — Monitoring
 
-Expandir o monitoramento além de HTTP simples.
+`✅` Protocolos: HTTP, HTTPS, TCP, Port, PING, DNS, SSL  
+`✅` Validações: Keyword, Header, JSON path/value, status codes  
+`✅` Timings: DNS, TCP, TLS, TTFB, Download, Total  
+`✅` Metadados: Response Size, Status Code, Headers, Redirect Chain  
+`✅` Histórico enriquecido em `ping_logs`
 
-| Capacidade | Detalhe |
-|------------|---------|
-| Protocolos | HTTP, HTTPS, TCP, PING, DNS, SSL, Port |
-| Validações | Keyword, Header, Response, Body, JSON |
-| Timing | DNS, TCP, TLS, TTFB, Download, Total |
-| Metadados | Response Size, Status Code, Headers, Redirect Chain, Content Length |
-| Histórico | Response History persistido |
+Migration: [`database/migration_monitoring_v1.sql`](../database/migration_monitoring_v1.sql)
 
 ---
 

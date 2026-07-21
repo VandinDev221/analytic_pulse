@@ -1,4 +1,5 @@
 import type {
+  CheckResult,
   CreateMonitorInput,
   Monitor,
   MonitorMetrics,
@@ -7,13 +8,39 @@ import type {
   UpdateMonitorInput,
 } from '@analytic-pulse/shared';
 import { query } from '../../../infrastructure/db';
+import type { CheckableMonitor } from '../checkers';
 import type { MonitorRepository } from './MonitorRepository';
+
+function mapMonitor(row: Record<string, unknown>): Monitor {
+  return {
+    ...(row as unknown as Monitor),
+    expected_status_codes: Array.isArray(row.expected_status_codes)
+      ? (row.expected_status_codes as number[])
+      : row.expected_status_codes
+        ? (row.expected_status_codes as number[])
+        : null,
+    request_headers:
+      row.request_headers && typeof row.request_headers === 'object'
+        ? (row.request_headers as Record<string, string>)
+        : null,
+    check_type: (row.check_type as Monitor['check_type']) || 'http',
+  };
+}
 
 export class PgMonitorRepository implements MonitorRepository {
   async create(userId: string, input: CreateMonitorInput): Promise<Monitor> {
     const result = await query(
-      `INSERT INTO monitors (user_id, name, url, method, interval_minutes, status)
-       VALUES ($1, $2, $3, $4, $5, 'active')
+      `INSERT INTO monitors (
+         user_id, name, url, method, interval_minutes, status, check_type,
+         host, port, dns_record_type, keyword, expected_status_codes,
+         expected_header_name, expected_header_value, json_path, json_expected,
+         request_headers, request_body
+       ) VALUES (
+         $1,$2,$3,$4,$5,'active',$6,
+         $7,$8,$9,$10,$11::jsonb,
+         $12,$13,$14,$15,
+         $16::jsonb,$17
+       )
        RETURNING *`,
       [
         userId,
@@ -21,9 +48,21 @@ export class PgMonitorRepository implements MonitorRepository {
         input.url,
         input.method ?? 'GET',
         input.interval_minutes ?? 5,
+        input.check_type ?? 'http',
+        input.host ?? null,
+        input.port ?? null,
+        input.dns_record_type ?? 'A',
+        input.keyword ?? null,
+        JSON.stringify(input.expected_status_codes ?? [200, 201, 202, 204, 301, 302, 304]),
+        input.expected_header_name ?? null,
+        input.expected_header_value ?? null,
+        input.json_path ?? null,
+        input.json_expected ?? null,
+        JSON.stringify(input.request_headers ?? {}),
+        input.request_body ?? null,
       ]
     );
-    return result.rows[0] as Monitor;
+    return mapMonitor(result.rows[0]);
   }
 
   async findAllByUser(userId: string): Promise<Monitor[]> {
@@ -33,7 +72,7 @@ export class PgMonitorRepository implements MonitorRepository {
        ORDER BY created_at DESC`,
       [userId]
     );
-    return result.rows as Monitor[];
+    return result.rows.map((row) => mapMonitor(row));
   }
 
   async findByIdForUser(id: string, userId: string): Promise<Monitor | null> {
@@ -42,7 +81,7 @@ export class PgMonitorRepository implements MonitorRepository {
        WHERE id = $1 AND user_id = $2`,
       [id, userId]
     );
-    return (result.rows[0] as Monitor | undefined) ?? null;
+    return result.rows[0] ? mapMonitor(result.rows[0]) : null;
   }
 
   async update(
@@ -54,19 +93,39 @@ export class PgMonitorRepository implements MonitorRepository {
     const values: unknown[] = [];
     let index = 1;
 
-    const map: Array<[keyof UpdateMonitorInput, unknown]> = [
+    const scalarMap: Array<[keyof UpdateMonitorInput, unknown]> = [
       ['name', input.name],
       ['url', input.url],
       ['method', input.method],
       ['interval_minutes', input.interval_minutes],
       ['status', input.status],
+      ['check_type', input.check_type],
+      ['host', input.host],
+      ['port', input.port],
+      ['dns_record_type', input.dns_record_type],
+      ['keyword', input.keyword],
+      ['expected_header_name', input.expected_header_name],
+      ['expected_header_value', input.expected_header_value],
+      ['json_path', input.json_path],
+      ['json_expected', input.json_expected],
+      ['request_body', input.request_body],
     ];
 
-    for (const [key, value] of map) {
+    for (const [key, value] of scalarMap) {
       if (value !== undefined) {
         fields.push(`${key} = $${index++}`);
         values.push(value);
       }
+    }
+
+    if (input.expected_status_codes !== undefined) {
+      fields.push(`expected_status_codes = $${index++}::jsonb`);
+      values.push(JSON.stringify(input.expected_status_codes));
+    }
+
+    if (input.request_headers !== undefined) {
+      fields.push(`request_headers = $${index++}::jsonb`);
+      values.push(JSON.stringify(input.request_headers));
     }
 
     if (fields.length === 0) {
@@ -86,7 +145,7 @@ export class PgMonitorRepository implements MonitorRepository {
       values
     );
 
-    return (result.rows[0] as Monitor | undefined) ?? null;
+    return result.rows[0] ? mapMonitor(result.rows[0]) : null;
   }
 
   async delete(id: string, userId: string): Promise<boolean> {
@@ -99,15 +158,24 @@ export class PgMonitorRepository implements MonitorRepository {
   }
 
   async findDueForCheck(): Promise<
-    Array<Pick<Monitor, 'id' | 'user_id' | 'name' | 'url' | 'status'>>
+    Array<CheckableMonitor & { user_id: string; status: MonitorStatus }>
   > {
     const result = await query(
-      `SELECT id, user_id, name, url, status FROM monitors
+      `SELECT id, user_id, name, url, method, status, check_type,
+              host, port, dns_record_type, keyword, expected_status_codes,
+              expected_header_name, expected_header_value, json_path, json_expected,
+              request_headers, request_body
+       FROM monitors
        WHERE status != 'inactive'`
     );
-    return result.rows as Array<
-      Pick<Monitor, 'id' | 'user_id' | 'name' | 'url' | 'status'>
-    >;
+    return result.rows.map((row) => {
+      const mapped = mapMonitor(row);
+      return {
+        ...mapped,
+        user_id: mapped.user_id,
+        status: mapped.status,
+      };
+    });
   }
 
   async updateCheckResult(
@@ -123,24 +191,33 @@ export class PgMonitorRepository implements MonitorRepository {
     );
   }
 
-  async insertPingLog(
-    monitorId: string,
-    log: {
-      status_code: number | null;
-      response_time_ms: number;
-      is_up: boolean;
-      error_message: string | null;
-    }
-  ): Promise<void> {
+  async insertPingLog(monitorId: string, result: CheckResult): Promise<void> {
     await query(
-      `INSERT INTO ping_logs (monitor_id, status_code, response_time_ms, is_up, error_message)
-       VALUES ($1, $2, $3, $4, $5)`,
+      `INSERT INTO ping_logs (
+         monitor_id, status_code, response_time_ms, is_up, error_message,
+         check_type, dns_ms, tcp_ms, tls_ms, ttfb_ms, download_ms,
+         response_size_bytes, content_length, response_headers, redirect_chain
+       ) VALUES (
+         $1,$2,$3,$4,$5,
+         $6,$7,$8,$9,$10,$11,
+         $12,$13,$14::jsonb,$15::jsonb
+       )`,
       [
         monitorId,
-        log.status_code,
-        log.response_time_ms,
-        log.is_up,
-        log.error_message,
+        result.status_code,
+        result.response_time_ms,
+        result.is_up,
+        result.error_message,
+        result.check_type,
+        result.timings.dns_ms,
+        result.timings.tcp_ms,
+        result.timings.tls_ms,
+        result.timings.ttfb_ms,
+        result.timings.download_ms,
+        result.response_size_bytes,
+        result.content_length,
+        result.response_headers ? JSON.stringify(result.response_headers) : null,
+        result.redirect_chain ? JSON.stringify(result.redirect_chain) : null,
       ]
     );
   }
@@ -159,12 +236,27 @@ export class PgMonitorRepository implements MonitorRepository {
     Array<
       Pick<
         PingLog,
-        'response_time_ms' | 'is_up' | 'created_at' | 'status_code' | 'error_message'
+        | 'response_time_ms'
+        | 'is_up'
+        | 'created_at'
+        | 'status_code'
+        | 'error_message'
+        | 'check_type'
+        | 'dns_ms'
+        | 'tcp_ms'
+        | 'tls_ms'
+        | 'ttfb_ms'
+        | 'download_ms'
+        | 'response_size_bytes'
+        | 'content_length'
+        | 'redirect_chain'
       >
     >
   > {
     const result = await query(
-      `SELECT response_time_ms, is_up, created_at, status_code, error_message
+      `SELECT response_time_ms, is_up, created_at, status_code, error_message,
+              check_type, dns_ms, tcp_ms, tls_ms, ttfb_ms, download_ms,
+              response_size_bytes, content_length, redirect_chain
        FROM ping_logs
        WHERE monitor_id = $1
        ORDER BY created_at DESC
@@ -174,7 +266,20 @@ export class PgMonitorRepository implements MonitorRepository {
     return result.rows as Array<
       Pick<
         PingLog,
-        'response_time_ms' | 'is_up' | 'created_at' | 'status_code' | 'error_message'
+        | 'response_time_ms'
+        | 'is_up'
+        | 'created_at'
+        | 'status_code'
+        | 'error_message'
+        | 'check_type'
+        | 'dns_ms'
+        | 'tcp_ms'
+        | 'tls_ms'
+        | 'ttfb_ms'
+        | 'download_ms'
+        | 'response_size_bytes'
+        | 'content_length'
+        | 'redirect_chain'
       >
     >;
   }

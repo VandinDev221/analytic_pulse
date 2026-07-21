@@ -2,7 +2,11 @@
 export type {
   Monitor,
   MonitorStatus,
+  CheckType,
+  DnsRecordType,
   PingLog,
+  CheckResult,
+  TimingBreakdown,
   UptimeDay,
   MonitorMetrics,
   MonitorMetricsResponse,
@@ -15,3 +19,5 @@ export type {
   UpdateMonitorInput,
   PingResult,
 } from '@analytic-pulse/shared';
+
+export { CHECK_TYPES } from '@analytic-pulse/shared';

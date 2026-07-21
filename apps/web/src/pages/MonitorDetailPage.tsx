@@ -95,6 +95,12 @@ export const MonitorDetailPage: React.FC = () => {
                     style={{ fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
                     {monitor.url} <ExternalLink size={11} />
                   </a>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Tipo: <strong style={{ color: 'var(--text-secondary)' }}>{(monitor.check_type || 'http').toUpperCase()}</strong>
+                    {monitor.method && (monitor.check_type === 'http' || monitor.check_type === 'https' || !monitor.check_type)
+                      ? ` · ${monitor.method}`
+                      : null}
+                  </div>
                   {lastUpdated && (
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
                       Atualizado {lastUpdated.toLocaleTimeString('pt-BR')}
@@ -147,6 +153,53 @@ export const MonitorDetailPage: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Timing breakdown do último check */}
+          {logs[0] && (
+            <div className="glass detail-card" style={{ padding: 28, marginBottom: 20 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
+                Último check — timings
+              </h2>
+              <div className="metrics-grid">
+                {[
+                  { label: 'DNS', value: logs[0].dns_ms },
+                  { label: 'TCP', value: logs[0].tcp_ms },
+                  { label: 'TLS', value: logs[0].tls_ms },
+                  { label: 'TTFB', value: logs[0].ttfb_ms },
+                  { label: 'Download', value: logs[0].download_ms },
+                  { label: 'Total', value: logs[0].response_time_ms },
+                ].map((t) => (
+                  <div
+                    key={t.label}
+                    style={{
+                      background: 'var(--bg-base)',
+                      borderRadius: 10,
+                      padding: '14px 16px',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 3 }}>
+                      {t.value != null ? `${t.value} ms` : '—'}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.label}</div>
+                  </div>
+                ))}
+              </div>
+              {(logs[0].response_size_bytes != null ||
+                (logs[0].redirect_chain && logs[0].redirect_chain.length > 1)) && (
+                <div style={{ marginTop: 16, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  {logs[0].response_size_bytes != null && (
+                    <div>Response size: {logs[0].response_size_bytes} bytes</div>
+                  )}
+                  {logs[0].redirect_chain && logs[0].redirect_chain.length > 1 && (
+                    <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                      Redirects: {logs[0].redirect_chain.join(' → ')}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Latency chart card */}
           <div className="glass detail-card" style={{ padding: 28, marginBottom: 20 }}>
