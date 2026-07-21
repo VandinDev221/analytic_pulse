@@ -68,6 +68,7 @@ O Render permite **apenas 1 Postgres gratuito** por workspace. Escolha uma opç�
    Para a Fase 6 (Mapa Mundial), execute [`database/migration_map_v1.sql`](database/migration_map_v1.sql).
    Para a Fase 7 (Analytics), execute [`database/migration_analytics_v1.sql`](database/migration_analytics_v1.sql).
    Para a Fase 8 (SSL), execute [`database/migration_ssl_v1.sql`](database/migration_ssl_v1.sql).
+   Para a Fase 9 (DNS), execute [`database/migration_dns_v1.sql`](database/migration_dns_v1.sql).
 
 **Opção B — Neon (recomendado se já tem Postgres no Render)**
 

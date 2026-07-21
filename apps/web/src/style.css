@@ -2016,6 +2016,24 @@ select.input option {
   background: rgba(255, 255, 255, 0.06);
 }
 
+.dns-scan-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dns-scan-form .input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.dns-auth-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
 /* ── Uptime grid (status page) ───────────────────────────────── */
 
 .uptime-cell {

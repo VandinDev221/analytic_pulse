@@ -10,6 +10,7 @@ import { StatusPageSettingsPage } from './pages/StatusPageSettingsPage';
 import { MapPage } from './pages/MapPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SslPage } from './pages/SslPage';
+import { DnsPage } from './pages/DnsPage';
 import { StatusPage } from './pages/StatusPage';
 import { AppLayout } from './components/AppLayout';
 import { getMe } from './services/api';
@@ -123,6 +124,14 @@ function App() {
           element={
             user
               ? <AppLayout userSlug={userSlug}><AlertsPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/dns"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><DnsPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
         />

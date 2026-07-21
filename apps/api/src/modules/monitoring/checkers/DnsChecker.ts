@@ -1,5 +1,5 @@
 import dns from 'dns/promises';
-import type { CheckResult, DnsRecordType } from '@analytic-pulse/shared';
+import type { CheckResult, DnsRecordAnswer, DnsRecordType } from '@analytic-pulse/shared';
 import {
   failResult,
   resolveHost,
@@ -7,7 +7,36 @@ import {
   type Checker,
 } from './types';
 
-async function resolveRecords(
+export function normalizeDnsRecords(records: unknown): DnsRecordAnswer[] {
+  if (!Array.isArray(records)) {
+    if (records == null) return [];
+    return [{ value: String(records) }];
+  }
+
+  return records.map((item) => {
+    if (typeof item === 'string') return { value: item };
+    if (Array.isArray(item)) return { value: item.join('') };
+    if (item && typeof item === 'object') {
+      const row = item as Record<string, unknown>;
+      if ('exchange' in row) {
+        return {
+          value: String(row.exchange),
+          priority: row.priority != null ? Number(row.priority) : null,
+        };
+      }
+      if ('value' in row) {
+        return {
+          value: String(row.value),
+          priority: row.priority != null ? Number(row.priority) : null,
+        };
+      }
+      return { value: JSON.stringify(item) };
+    }
+    return { value: String(item) };
+  });
+}
+
+export async function resolveDnsRecords(
   host: string,
   recordType: DnsRecordType
 ): Promise<unknown> {
@@ -37,13 +66,10 @@ async function resolveRecords(
       return dns.resolveTxt(selectorHost);
     }
     case 'DMARC': {
-      const dmarcHost = host.startsWith('_dmarc.')
-        ? host
-        : `_dmarc.${host}`;
+      const dmarcHost = host.startsWith('_dmarc.') ? host : `_dmarc.${host}`;
       return dns.resolveTxt(dmarcHost);
     }
     case 'DNSSEC': {
-      // Presence of DS/DNSKEY is a positive signal; ENODATA → down
       try {
         return await dns.resolve(host, 'DS');
       } catch {
@@ -68,15 +94,20 @@ export class DnsChecker implements Checker {
     }
 
     try {
-      const records = await resolveRecords(host, recordType);
+      const raw = await resolveDnsRecords(host, recordType);
       const dnsMs = Date.now() - start;
-      const list = Array.isArray(records) ? records : [records];
+      const records = normalizeDnsRecords(raw);
 
-      if (list.length === 0) {
+      if (records.length === 0) {
         return failResult('dns', dnsMs, `NO_${recordType}_RECORDS`, {
           dns_ms: dnsMs,
         });
       }
+
+      const preview = records
+        .slice(0, 5)
+        .map((r) => (r.priority != null ? `${r.priority} ${r.value}` : r.value))
+        .join(' · ');
 
       return {
         status_code: null,
@@ -96,7 +127,13 @@ export class DnsChecker implements Checker {
         content_length: null,
         response_headers: null,
         redirect_chain: null,
-        meta: { host, record_type: recordType, records: list },
+        meta: {
+          host,
+          record_type: recordType,
+          records,
+          record_count: records.length,
+          answers_preview: preview.slice(0, 500),
+        },
       };
     } catch (error) {
       const dnsMs = Date.now() - start;

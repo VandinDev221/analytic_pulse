@@ -247,6 +247,30 @@ export class PgMonitorRepository implements MonitorRepository {
       return;
     }
 
+    if (result?.check_type === 'dns' && result.meta) {
+      const meta = result.meta;
+      await query(
+        `UPDATE monitors
+         SET status = $1,
+             last_checked_at = NOW(),
+             last_response_time_ms = $2,
+             dns_last_records = $3::jsonb,
+             dns_record_count = $4,
+             dns_resolved_at = NOW(),
+             dns_answers_preview = $5
+         WHERE id = $6`,
+        [
+          status,
+          responseTimeMs,
+          JSON.stringify(meta.records ?? []),
+          meta.record_count != null ? Number(meta.record_count) : null,
+          (meta.answers_preview as string | null) ?? null,
+          id,
+        ]
+      );
+      return;
+    }
+
     await query(
       `UPDATE monitors
        SET status = $1, last_checked_at = NOW(), last_response_time_ms = $2
@@ -268,12 +292,12 @@ export class PgMonitorRepository implements MonitorRepository {
          monitor_id, status_code, response_time_ms, is_up, error_message,
          check_type, dns_ms, tcp_ms, tls_ms, ttfb_ms, download_ms,
          response_size_bytes, content_length, response_headers, redirect_chain,
-         ssl_meta
+         ssl_meta, dns_meta
        ) VALUES (
          $1,$2,$3,$4,$5,
          $6,$7,$8,$9,$10,$11,
          $12,$13,$14::jsonb,$15::jsonb,
-         $16::jsonb
+         $16::jsonb,$17::jsonb
        )`,
       [
         monitorId,
@@ -292,6 +316,9 @@ export class PgMonitorRepository implements MonitorRepository {
         result.response_headers ? JSON.stringify(result.response_headers) : null,
         result.redirect_chain ? JSON.stringify(result.redirect_chain) : null,
         result.check_type === 'ssl' && result.meta
+          ? JSON.stringify(result.meta)
+          : null,
+        result.check_type === 'dns' && result.meta
           ? JSON.stringify(result.meta)
           : null,
       ]

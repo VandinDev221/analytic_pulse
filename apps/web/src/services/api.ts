@@ -148,6 +148,28 @@ export async function getSslOverview(): Promise<import('../types').SslOverview> 
   return res.json();
 }
 
+export async function getDnsOverview(): Promise<import('../types').DnsOverview> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/dns/overview`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch DNS overview');
+  return res.json();
+}
+
+export async function scanDnsDomain(
+  host: string
+): Promise<import('../types').DnsDomainScan> {
+  const headers = getAuthHeader();
+  const res = await fetch(
+    `${API}/dns/scan?host=${encodeURIComponent(host)}`,
+    { headers }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to scan DNS');
+  }
+  return res.json();
+}
+
 export async function getMonitor(id: string): Promise<Monitor> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { headers });

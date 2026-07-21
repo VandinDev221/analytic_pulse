@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 9 — DNS**.
+Próximo: **Fase 10 — Linux Agent**.
 
 ---
 
@@ -122,7 +122,13 @@ Migration: [`database/migration_ssl_v1.sql`](../database/migration_ssl_v1.sql)
 
 ## Fase 9 — DNS
 
-A, AAAA, MX, TXT, CNAME, NS, SPF, DKIM, DMARC, DNSSEC.
+`✅` Tipos: A, AAAA, MX, TXT, CNAME, NS, SPF, DKIM, DMARC, DNSSEC  
+`✅` Snapshot persistido + histórico `dns_meta`  
+`✅` Scan completo de domínio (email auth)  
+`✅` Página `/dns` + detalhe no monitor  
+`✅` API `GET /api/dns/overview` e `GET /api/dns/scan`  
+
+Migration: [`database/migration_dns_v1.sql`](../database/migration_dns_v1.sql)
 
 ---
 

@@ -62,6 +62,11 @@ export type {
   SslMonitorRow,
   SslHealthStatus,
   SslCertificateInfo,
+  DnsOverview,
+  DnsMonitorRow,
+  DnsDomainScan,
+  DnsTypeResult,
+  DnsRecordAnswer,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';

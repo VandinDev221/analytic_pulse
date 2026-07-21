@@ -153,6 +153,75 @@ export const MonitorDetailPage: React.FC = () => {
             </div>
           </div>
 
+          {monitor.check_type === 'dns' && (
+            <div className="glass detail-card" style={{ padding: 28, marginBottom: 20 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
+                Resolução DNS
+              </h2>
+              <div className="metrics-grid">
+                {[
+                  {
+                    label: 'Tipo',
+                    value: (monitor.dns_record_type || 'A').toUpperCase(),
+                    color: 'var(--accent-light)',
+                  },
+                  {
+                    label: 'Registros',
+                    value:
+                      monitor.dns_record_count != null
+                        ? String(monitor.dns_record_count)
+                        : '—',
+                    color: 'var(--text-primary)',
+                  },
+                  {
+                    label: 'Última resolução',
+                    value: monitor.dns_resolved_at
+                      ? new Date(monitor.dns_resolved_at).toLocaleString('pt-BR')
+                      : '—',
+                    color: 'var(--text-secondary)',
+                  },
+                  {
+                    label: 'Latência DNS',
+                    value: monitor.last_response_time_ms
+                      ? `${monitor.last_response_time_ms} ms`
+                      : '—',
+                    color: 'var(--green)',
+                  },
+                ].map((m) => (
+                  <div
+                    key={m.label}
+                    style={{
+                      background: 'var(--bg-base)',
+                      borderRadius: 10,
+                      padding: '14px 16px',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <div style={{ fontSize: 18, fontWeight: 700, color: m.color, marginBottom: 3 }}>
+                      {m.value}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+              {monitor.dns_answers_preview && (
+                <div style={{ marginTop: 16, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  <strong>Respostas:</strong> {monitor.dns_answers_preview}
+                </div>
+              )}
+              {Array.isArray(monitor.dns_last_records) && monitor.dns_last_records.length > 0 && (
+                <ul style={{ marginTop: 12, paddingLeft: 18, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  {(monitor.dns_last_records as Array<{ value?: string; priority?: number }>).slice(0, 10).map((r, i) => (
+                    <li key={i} style={{ marginBottom: 4, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                      {r.priority != null ? `${r.priority} ` : ''}
+                      {r.value || JSON.stringify(r)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
           {monitor.check_type === 'ssl' && (
             <div className="glass detail-card" style={{ padding: 28, marginBottom: 20 }}>
               <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>

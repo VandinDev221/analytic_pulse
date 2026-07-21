@@ -63,6 +63,10 @@ export interface Monitor {
   ssl_fingerprint?: string | null;
   ssl_warn_days?: number | null;
   ssl_last_warned_at?: string | null;
+  dns_last_records?: unknown[] | null;
+  dns_record_count?: number | null;
+  dns_resolved_at?: string | null;
+  dns_answers_preview?: string | null;
   created_at: string;
   last_checked_at?: string | null;
   last_response_time_ms?: number | null;
@@ -779,4 +783,55 @@ export interface SslOverview {
     unknown: number;
   };
   certificates: SslMonitorRow[];
+}
+
+// ── DNS (Fase 9) ──────────────────────────────────────────────
+
+export interface DnsRecordAnswer {
+  value: string;
+  priority?: number | null;
+}
+
+export interface DnsTypeResult {
+  type: DnsRecordType;
+  ok: boolean;
+  records: DnsRecordAnswer[];
+  error: string | null;
+  latency_ms: number;
+}
+
+export interface DnsMonitorRow {
+  monitor_id: string;
+  name: string;
+  host: string | null;
+  record_type: DnsRecordType;
+  status: MonitorStatus;
+  record_count: number | null;
+  answers_preview: string | null;
+  records: DnsRecordAnswer[];
+  last_checked_at: string | null;
+  last_response_time_ms: number | null;
+  resolved_at: string | null;
+}
+
+export interface DnsOverview {
+  summary: {
+    total: number;
+    up: number;
+    down: number;
+    by_type: Partial<Record<DnsRecordType, number>>;
+  };
+  monitors: DnsMonitorRow[];
+}
+
+export interface DnsDomainScan {
+  host: string;
+  scanned_at: string;
+  results: DnsTypeResult[];
+  email_auth: {
+    spf: boolean;
+    dkim: boolean;
+    dmarc: boolean;
+    dnssec: boolean;
+  };
 }
