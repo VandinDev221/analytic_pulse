@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 3 — Alert Engine**.
+Próximo: **Fase 4 — Status Pages**.
 
 ---
 
@@ -44,14 +44,13 @@ Migration: [`database/migration_incidents_v1.sql`](../database/migration_inciden
 
 ## Fase 3 — Alert Engine
 
-Canais: Telegram, Discord, Slack, Webhook, Email, Microsoft Teams, Push.
+`✅` Canais: Telegram, WhatsApp, Email, Slack, Discord, Teams, Webhook  
+`✅` Regras: IF metric op threshold FOR N seconds THEN channels  
+`✅` Cooldown, retry com backoff, escalonamento por step  
+`✅` Entregas (`alert_deliveries`) + UI `/alerts`  
+`✅` Fallback legado (`notification_settings`) se não houver regras  
 
-Por alerta: Retry, Cooldown, Escalonamento, Prioridade, Regras.
-
-```
-IF Latency > 500ms FOR 5 min
-THEN Telegram + Slack + Webhook
-```
+Migration: [`database/migration_alerts_v1.sql`](../database/migration_alerts_v1.sql)
 
 ---
 

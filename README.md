@@ -63,6 +63,7 @@ O Render permite **apenas 1 Postgres gratuito** por workspace. Escolha uma opç�
 2. Abra o **PSQL** e execute [`database/schema.sql`](database/schema.sql).
    Se o banco já existia antes da Fase 1, execute também [`database/migration_monitoring_v1.sql`](database/migration_monitoring_v1.sql).
    Para a Fase 2 (incidentes), execute [`database/migration_incidents_v1.sql`](database/migration_incidents_v1.sql).
+   Para a Fase 3 (Alert Engine), execute [`database/migration_alerts_v1.sql`](database/migration_alerts_v1.sql).
 
 **Opção B — Neon (recomendado se já tem Postgres no Render)**
 

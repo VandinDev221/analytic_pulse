@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X, ShieldAlert
+  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X, ShieldAlert, Zap
 } from 'lucide-react';
 import {
   getNotificationSettings,
@@ -44,6 +44,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { path: '/incidents', label: 'Incidentes', icon: <ShieldAlert size={18} /> },
+    { path: '/alerts', label: 'Alertas', icon: <Zap size={18} /> },
   ];
 
   const sidebarContent = (

@@ -302,3 +302,76 @@ export async function addIncidentComment(id: string, body: string) {
   }
   return res.json();
 }
+
+// ── Alerts ────────────────────────────────────────────────────
+
+export async function getAlertChannels(): Promise<import('../types').AlertChannel[]> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/alerts/channels`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch channels');
+  return res.json();
+}
+
+export async function createAlertChannel(
+  payload: import('../types').CreateAlertChannelInput
+) {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/alerts/channels`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to create channel');
+  }
+  return res.json();
+}
+
+export async function deleteAlertChannel(id: string): Promise<void> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/alerts/channels/${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) throw new Error('Failed to delete channel');
+}
+
+export async function getAlertRules(): Promise<import('../types').AlertRule[]> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/alerts/rules`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch rules');
+  return res.json();
+}
+
+export async function createAlertRule(
+  payload: import('../types').CreateAlertRuleInput
+) {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/alerts/rules`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to create rule');
+  }
+  return res.json();
+}
+
+export async function deleteAlertRule(id: string): Promise<void> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/alerts/rules/${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) throw new Error('Failed to delete rule');
+}
+
+export async function getAlertDeliveries(): Promise<import('../types').AlertDelivery[]> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/alerts/deliveries`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch deliveries');
+  return res.json();
+}

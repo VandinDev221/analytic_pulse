@@ -301,3 +301,138 @@ export interface UpdateIncidentInput {
 export interface CreateIncidentCommentInput {
   body: string;
 }
+
+// ── Alerts (Fase 3) ───────────────────────────────────────────
+
+export type AlertChannelKind =
+  | 'telegram'
+  | 'whatsapp'
+  | 'email'
+  | 'slack'
+  | 'webhook'
+  | 'discord'
+  | 'teams';
+
+export type AlertMetric =
+  | 'status_down'
+  | 'status_up'
+  | 'latency_ms'
+  | 'http_status'
+  | 'is_up';
+
+export type AlertOperator = '>' | '>=' | '<' | '<=' | '==' | '!=';
+
+export type AlertDeliveryStatus =
+  | 'pending'
+  | 'sent'
+  | 'failed'
+  | 'suppressed';
+
+export interface AlertChannel {
+  id: string;
+  user_id: string;
+  name: string;
+  kind: AlertChannelKind;
+  config: Record<string, unknown>;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AlertRuleChannelBinding {
+  channel_id: string;
+  escalation_step: number;
+  delay_seconds: number;
+  channel?: AlertChannel;
+}
+
+export interface AlertRule {
+  id: string;
+  user_id: string;
+  name: string;
+  is_enabled: boolean;
+  monitor_id: string | null;
+  metric: AlertMetric;
+  operator: AlertOperator;
+  threshold: number | null;
+  for_seconds: number;
+  severity: IncidentSeverity;
+  cooldown_seconds: number;
+  max_retries: number;
+  retry_backoff_seconds: number;
+  priority: number;
+  created_at: string;
+  updated_at: string;
+  channels: AlertRuleChannelBinding[];
+}
+
+export interface CreateAlertChannelInput {
+  name: string;
+  kind: AlertChannelKind;
+  config: Record<string, unknown>;
+  is_enabled?: boolean;
+}
+
+export interface UpdateAlertChannelInput {
+  name?: string;
+  kind?: AlertChannelKind;
+  config?: Record<string, unknown>;
+  is_enabled?: boolean;
+}
+
+export interface CreateAlertRuleInput {
+  name: string;
+  is_enabled?: boolean;
+  monitor_id?: string | null;
+  metric: AlertMetric;
+  operator: AlertOperator;
+  threshold?: number | null;
+  for_seconds?: number;
+  severity?: IncidentSeverity;
+  cooldown_seconds?: number;
+  max_retries?: number;
+  retry_backoff_seconds?: number;
+  priority?: number;
+  channels: Array<{
+    channel_id: string;
+    escalation_step?: number;
+    delay_seconds?: number;
+  }>;
+}
+
+export interface UpdateAlertRuleInput {
+  name?: string;
+  is_enabled?: boolean;
+  monitor_id?: string | null;
+  metric?: AlertMetric;
+  operator?: AlertOperator;
+  threshold?: number | null;
+  for_seconds?: number;
+  severity?: IncidentSeverity;
+  cooldown_seconds?: number;
+  max_retries?: number;
+  retry_backoff_seconds?: number;
+  priority?: number;
+  channels?: Array<{
+    channel_id: string;
+    escalation_step?: number;
+    delay_seconds?: number;
+  }>;
+}
+
+export interface AlertDelivery {
+  id: string;
+  rule_id: string;
+  channel_id: string;
+  monitor_id: string | null;
+  incident_id: string | null;
+  fingerprint: string;
+  status: AlertDeliveryStatus;
+  attempt: number;
+  escalation_step: number;
+  payload: Record<string, unknown>;
+  last_error: string | null;
+  scheduled_at: string;
+  fired_at: string | null;
+  created_at: string;
+}

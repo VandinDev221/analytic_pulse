@@ -6,6 +6,7 @@ import statusRouter from './routes/status';
 import telegramRouter from './routes/telegram';
 import { cronRouter, monitorsRouter } from './modules/monitoring';
 import { incidentsRouter } from './modules/incidents';
+import { alertsRouter } from './modules/alerts';
 import { checkDatabase } from './infrastructure/db';
 import { registerTelegramWebhook } from './services/telegramApi';
 import { logger } from './observability/logger';
@@ -78,6 +79,7 @@ app.get('/metrics', (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/monitors', monitorsRouter);
 app.use('/api/incidents', incidentsRouter);
+app.use('/api/alerts', alertsRouter);
 app.use('/api/cron', cronRouter);
 app.use('/api/status', statusRouter);
 app.use('/api/telegram', telegramRouter);

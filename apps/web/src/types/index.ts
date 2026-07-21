@@ -25,6 +25,14 @@ export type {
   IncidentComment,
   UpdateIncidentInput,
   AffectedMonitor,
+  AlertChannel,
+  AlertChannelKind,
+  AlertRule,
+  AlertDelivery,
+  AlertMetric,
+  AlertOperator,
+  CreateAlertChannelInput,
+  CreateAlertRuleInput,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES } from '@analytic-pulse/shared';

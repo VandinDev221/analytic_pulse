@@ -6,6 +6,10 @@ import {
   setLastPingCycleDuration,
 } from '../../../observability/metrics';
 import { notifyStatusChange } from '../../../services/notificationService';
+import { AlertDispatcher } from '../../alerts/services/AlertDispatcher';
+import { AlertEvaluator } from '../../alerts/services/AlertEvaluator';
+import { PgAlertDeliveryRepository } from '../../alerts/repositories/PgAlertDeliveryRepository';
+import { PgAlertRuleRepository } from '../../alerts/repositories/PgAlertRepositories';
 import { IncidentService } from '../../incidents/services/IncidentService';
 import { PgIncidentRepository } from '../../incidents/repositories/PgIncidentRepository';
 import { runCheck, runInBatches, type CheckableMonitor } from '../checkers';
@@ -16,6 +20,8 @@ export interface PingCycleResult {
   success: number;
   failed: number;
   elapsed_ms: number;
+  alerts_enqueued?: number;
+  alerts_sent?: number;
 }
 
 function didStatusChange(previous: MonitorStatus, isUp: boolean): boolean {
@@ -30,13 +36,25 @@ function didStatusChange(previous: MonitorStatus, isUp: boolean): boolean {
 
 export class CheckOrchestrator {
   private readonly incidents: IncidentService;
+  private readonly alertEvaluator: AlertEvaluator;
+  private readonly alertDispatcher: AlertDispatcher;
 
   constructor(
     private readonly monitors: MonitorRepository,
-    incidents?: IncidentService
+    deps?: {
+      incidents?: IncidentService;
+      alertEvaluator?: AlertEvaluator;
+      alertDispatcher?: AlertDispatcher;
+    }
   ) {
     this.incidents =
-      incidents ?? new IncidentService(new PgIncidentRepository());
+      deps?.incidents ?? new IncidentService(new PgIncidentRepository());
+    const deliveryRepo = new PgAlertDeliveryRepository();
+    this.alertEvaluator =
+      deps?.alertEvaluator ??
+      new AlertEvaluator(new PgAlertRuleRepository(), deliveryRepo);
+    this.alertDispatcher =
+      deps?.alertDispatcher ?? new AlertDispatcher(deliveryRepo);
   }
 
   async runPingCycle(): Promise<PingCycleResult> {
@@ -46,20 +64,32 @@ export class CheckOrchestrator {
 
     const monitors = await this.monitors.findDueForCheck();
     if (monitors.length === 0) {
-      return { processed: 0, success: 0, failed: 0, elapsed_ms: 0 };
+      const flush = await this.alertDispatcher.processDue();
+      return {
+        processed: 0,
+        success: 0,
+        failed: 0,
+        elapsed_ms: 0,
+        alerts_sent: flush.sent,
+      };
     }
 
     log.info('Active monitors loaded', { count: monitors.length });
 
+    let alertsEnqueued = 0;
+
     const tasks = monitors.map((monitor) => async () => {
       const result = await runCheck(monitor);
-      await this.persistCheck(monitor, result);
+      const enqueued = await this.persistCheck(monitor, result);
+      alertsEnqueued += enqueued;
       return { monitorId: monitor.id, name: monitor.name, ...result };
     });
 
     const results = await runInBatches(tasks, 5);
     const success = results.filter((r) => r.status === 'fulfilled').length;
     const failed = results.filter((r) => r.status === 'rejected').length;
+
+    const flush = await this.alertDispatcher.processDue();
     const elapsed_ms = Date.now() - startTime;
 
     inc('ping_cycles_total');
@@ -71,6 +101,8 @@ export class CheckOrchestrator {
       success,
       failed,
       elapsed_ms,
+      alerts_enqueued: alertsEnqueued,
+      alerts_sent: flush.sent,
     });
 
     return {
@@ -78,6 +110,8 @@ export class CheckOrchestrator {
       success,
       failed,
       elapsed_ms,
+      alerts_enqueued: alertsEnqueued,
+      alerts_sent: flush.sent,
     };
   }
 
@@ -87,7 +121,7 @@ export class CheckOrchestrator {
       status: MonitorStatus;
     },
     result: CheckResult
-  ): Promise<void> {
+  ): Promise<number> {
     try {
       await this.monitors.insertPingLog(monitor.id, result);
     } catch (error) {
@@ -110,6 +144,24 @@ export class CheckOrchestrator {
 
     recordPingResult(result.is_up);
 
+    let enqueued = 0;
+    let usedEngine = false;
+
+    try {
+      const evalResult = await this.alertEvaluator.onCheckPersisted({
+        monitor,
+        result,
+        statusChanged,
+      });
+      enqueued = evalResult.enqueued;
+      usedEngine = evalResult.usedEngine;
+    } catch (error) {
+      logger.error('Alert evaluation failed', {
+        monitorId: monitor.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     if (statusChanged) {
       logger.info('Monitor status changed', {
         monitorId: monitor.id,
@@ -119,23 +171,27 @@ export class CheckOrchestrator {
         to: newStatus,
       });
 
-      let alertSent = false;
-      try {
-        await notifyStatusChange(
-          monitor.user_id,
-          monitor.name,
-          monitor.url,
-          result.is_up,
-          result.status_code,
-          result.error_message
-        );
-        alertSent = true;
-        inc('notifications_sent_total');
-      } catch (error) {
-        logger.warn('Notification failed during status change', {
-          monitorId: monitor.id,
-          error: error instanceof Error ? error.message : String(error),
-        });
+      let alertSent = enqueued > 0;
+
+      // Legacy fallback when no Alert Engine rules exist
+      if (!usedEngine) {
+        try {
+          await notifyStatusChange(
+            monitor.user_id,
+            monitor.name,
+            monitor.url,
+            result.is_up,
+            result.status_code,
+            result.error_message
+          );
+          alertSent = true;
+          inc('notifications_sent_total');
+        } catch (error) {
+          logger.warn('Legacy notification failed', {
+            monitorId: monitor.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
 
       try {
@@ -156,5 +212,7 @@ export class CheckOrchestrator {
         });
       }
     }
+
+    return enqueued;
   }
 }
