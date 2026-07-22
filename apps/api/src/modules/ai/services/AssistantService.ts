@@ -1,4 +1,6 @@
+import crypto from 'crypto';
 import { ValidationError } from '@analytic-pulse/shared';
+import { env } from '../../../config/env';
 import { GroqClient, type GroqChatMessage } from './GroqClient';
 import { PRODUCT_KNOWLEDGE } from './productKnowledge';
 
@@ -7,20 +9,53 @@ export type ChatRole = 'user' | 'assistant';
 export type ChatMessageInput = {
   role: ChatRole;
   content: string;
+  /** Assinatura HMAC — obrigatória em mensagens assistant geradas pelo servidor. */
+  sig?: string;
 };
 
 const MAX_MESSAGES = 12;
 const MAX_CONTENT_LENGTH = 2000;
 
+const FALLBACK_REPLY =
+  'Infelizmente não consigo resolver sua dúvida. Entre em contato com o proprietário.';
+
 const SYSTEM_PROMPT = `${PRODUCT_KNOWLEDGE}
 
 Você é um guia amigável do painel. Prefira passos curtos e listas quando ajudar a clareza.`;
 
+function signAssistantContent(content: string): string {
+  return crypto
+    .createHmac('sha256', env.jwtSecret)
+    .update(content, 'utf8')
+    .digest('hex');
+}
+
+function verifyAssistantContent(content: string, sig: unknown): boolean {
+  if (typeof sig !== 'string' || !/^[0-9a-f]{64}$/i.test(sig)) {
+    return false;
+  }
+  const expected = signAssistantContent(content);
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(expected, 'hex'),
+      Buffer.from(sig, 'hex')
+    );
+  } catch {
+    return false;
+  }
+}
+
 export class AssistantService {
   constructor(private readonly groq = new GroqClient()) {}
 
-  async chat(messages: unknown): Promise<{ role: 'assistant'; content: string }> {
+  async chat(
+    messages: unknown
+  ): Promise<{ role: 'assistant'; content: string; sig: string }> {
     const normalized = this.validateMessages(messages);
+    if (!normalized) {
+      const content = FALLBACK_REPLY;
+      return { role: 'assistant', content, sig: signAssistantContent(content) };
+    }
 
     const payload: GroqChatMessage[] = [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -31,10 +66,20 @@ export class AssistantService {
     ];
 
     const content = await this.groq.chat(payload);
-    return { role: 'assistant', content };
+    return {
+      role: 'assistant',
+      content,
+      sig: signAssistantContent(content),
+    };
   }
 
-  private validateMessages(raw: unknown): ChatMessageInput[] {
+  /**
+   * Retorna null quando o limite de tamanho/quantidade impede o atendimento
+   * (o caller responde com FALLBACK_REPLY no chat).
+   * Histórico longo demais é truncado para não quebrar a conversa.
+   * Mensagens `assistant` só são aceitas com assinatura HMAC válida do servidor.
+   */
+  private validateMessages(raw: unknown): ChatMessageInput[] | null {
     if (!Array.isArray(raw)) {
       throw new ValidationError('messages deve ser um array');
     }
@@ -42,7 +87,7 @@ export class AssistantService {
       throw new ValidationError('Envie pelo menos uma mensagem');
     }
     if (raw.length > MAX_MESSAGES) {
-      throw new ValidationError(`Máximo de ${MAX_MESSAGES} mensagens por requisição`);
+      return null;
     }
 
     const result: ChatMessageInput[] = [];
@@ -54,6 +99,7 @@ export class AssistantService {
       }
       const role = (item as { role?: unknown }).role;
       const content = (item as { content?: unknown }).content;
+      const sig = (item as { sig?: unknown }).sig;
 
       if (role !== 'user' && role !== 'assistant') {
         throw new ValidationError(`role inválido no índice ${i} (use user ou assistant)`);
@@ -61,13 +107,44 @@ export class AssistantService {
       if (typeof content !== 'string' || !content.trim()) {
         throw new ValidationError(`content vazio no índice ${i}`);
       }
-      if (content.length > MAX_CONTENT_LENGTH) {
-        throw new ValidationError(
-          `Mensagem no índice ${i} excede ${MAX_CONTENT_LENGTH} caracteres`
-        );
+
+      const isLast = i === raw.length - 1;
+
+      // Cliente não pode forjar respostas do assistente — valida HMAC no texto exato
+      if (role === 'assistant') {
+        if (!verifyAssistantContent(content, sig)) {
+          throw new ValidationError(
+            `Mensagem assistant inválida ou sem assinatura no índice ${i}`
+          );
+        }
+        if (content.length > MAX_CONTENT_LENGTH) {
+          throw new ValidationError(
+            `Mensagem assistant acima do limite no índice ${i}`
+          );
+        }
+        result.push({
+          role,
+          content,
+          sig: typeof sig === 'string' ? sig : undefined,
+        });
+        continue;
       }
 
-      result.push({ role, content: content.trim() });
+      const trimmed = content.trim();
+
+      // Mensagem atual do usuário acima do limite → resposta amigável no chat
+      if (isLast && trimmed.length > MAX_CONTENT_LENGTH) {
+        return null;
+      }
+
+      // Histórico longo → trunca, não quebra o chat
+      result.push({
+        role,
+        content:
+          trimmed.length > MAX_CONTENT_LENGTH
+            ? `${trimmed.slice(0, MAX_CONTENT_LENGTH - 1)}…`
+            : trimmed,
+      });
     }
 
     const last = result[result.length - 1];

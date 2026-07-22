@@ -154,7 +154,6 @@ export const HelpAssistant: React.FC = () => {
               onKeyDown={handleKeyDown}
               placeholder="Escreva sua dúvida…"
               disabled={loading}
-              maxLength={2000}
               aria-label="Mensagem para o assistente"
             />
             <button

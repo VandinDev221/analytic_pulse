@@ -2,7 +2,26 @@ import { Pool } from 'pg';
 import { env } from '../config/env';
 import { logger } from '../observability/logger';
 
-const connectionString = env.databaseUrl;
+/**
+ * Normaliza a connection string para evitar o aviso de depreciação do `pg`
+ * (sslmode=require tratado como verify-full). Mantém o comportamento atual
+ * via `ssl: { rejectUnauthorized: false }` no Pool e compatibilidade libpq.
+ */
+function normalizeDatabaseUrl(url: string | undefined): string | undefined {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    const mode = parsed.searchParams.get('sslmode');
+    if (mode === 'require' || mode === 'prefer' || mode === 'verify-ca') {
+      parsed.searchParams.set('uselibpqcompat', 'true');
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+const connectionString = normalizeDatabaseUrl(env.databaseUrl);
 
 const isLocal =
   connectionString?.includes('localhost') ||

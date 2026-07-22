@@ -600,6 +600,8 @@ export async function deleteMaintenance(id: string): Promise<void> {
 export type AssistantChatMessage = {
   role: 'user' | 'assistant';
   content: string;
+  /** Assinatura HMAC das respostas do assistente (gerada pelo servidor). */
+  sig?: string;
 };
 
 export async function chatWithAssistant(
