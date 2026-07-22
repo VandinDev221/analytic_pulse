@@ -74,6 +74,14 @@ export type {
   AgentMetricsPayload,
   AgentSnapshotPoint,
   AgentStatus,
+  DockerOverview,
+  DockerHostSummary,
+  DockerContainerRow,
+  DockerSnapshot,
+  AgentContainerInfo,
+  DockerVolumeInfo,
+  DockerNetworkInfo,
+  DockerContainerLog,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';

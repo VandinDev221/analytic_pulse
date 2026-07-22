@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X, ShieldAlert, Zap, Globe, Map, BarChart3, Lock, Server, Cpu
+  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X, ShieldAlert, Zap, Globe, Map, BarChart3, Lock, Server, Cpu, Box
 } from 'lucide-react';
 import {
   getNotificationSettings,
@@ -9,6 +9,7 @@ import {
   testNotificationSettings,
 } from '../services/api';
 import type { NotificationChannel } from '../types';
+import { HelpAssistant } from './HelpAssistant';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -184,6 +185,8 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
       <main className="main-content">
         {children}
       </main>
+
+      <HelpAssistant />
 
       {showSettings && <NotificationSettingsModal onClose={() => setShowSettings(false)} />}
     </div>

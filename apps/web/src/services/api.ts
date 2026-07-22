@@ -209,6 +209,13 @@ export async function deleteAgent(id: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete agent');
 }
 
+export async function getDockerOverview(): Promise<import('../types').DockerOverview> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/docker/overview`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch Docker overview');
+  return res.json();
+}
+
 export async function getMonitor(id: string): Promise<Monitor> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { headers });
@@ -540,4 +547,28 @@ export async function deleteMaintenance(id: string): Promise<void> {
     headers,
   });
   if (!res.ok) throw new Error('Failed to delete maintenance');
+}
+
+// ── AI Assistant ──────────────────────────────────────────────
+
+export type AssistantChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+export async function chatWithAssistant(
+  messages: AssistantChatMessage[]
+): Promise<AssistantChatMessage> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/ai/chat`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ messages }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao consultar o assistente');
+  }
+  const data = await res.json();
+  return data.message as AssistantChatMessage;
 }

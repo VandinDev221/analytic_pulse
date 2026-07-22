@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { collectMetrics } from './collect.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 
 function env(name: string, fallback = ''): string {
   return process.env[name]?.trim() || fallback;

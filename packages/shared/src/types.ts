@@ -886,6 +886,41 @@ export interface AgentContainerInfo {
   name: string;
   image: string;
   status: string;
+  state?: string | null;
+  cpu_pct?: number | null;
+  mem_usage_bytes?: number | null;
+  mem_limit_bytes?: number | null;
+  mem_pct?: number | null;
+  restart_count?: number | null;
+  ports?: string | null;
+  created_at?: string | null;
+}
+
+export interface DockerVolumeInfo {
+  name: string;
+  driver: string;
+  mountpoint?: string | null;
+}
+
+export interface DockerNetworkInfo {
+  id: string;
+  name: string;
+  driver: string;
+  scope?: string | null;
+}
+
+export interface DockerContainerLog {
+  container: string;
+  container_id: string;
+  lines: string[];
+}
+
+export interface DockerSnapshot {
+  available: boolean;
+  containers: AgentContainerInfo[];
+  volumes: DockerVolumeInfo[];
+  networks: DockerNetworkInfo[];
+  logs: DockerContainerLog[];
 }
 
 export interface AgentServiceInfo {
@@ -911,6 +946,7 @@ export interface AgentMetricsPayload {
   temperature_c?: number | null;
   network?: AgentNetworkIface[];
   containers?: AgentContainerInfo[];
+  docker?: DockerSnapshot;
   services?: AgentServiceInfo[];
   logs?: AgentLogLine[];
   collected_at?: string;
@@ -962,4 +998,42 @@ export interface AgentsOverview {
     pending: number;
   };
   agents: Agent[];
+}
+
+// ── Docker (Fase 11) ──────────────────────────────────────────
+
+export interface DockerHostSummary {
+  agent_id: string;
+  agent_name: string;
+  hostname: string | null;
+  status: AgentStatus;
+  available: boolean;
+  containers_total: number;
+  containers_running: number;
+  containers_stopped: number;
+  volumes: number;
+  networks: number;
+  last_seen_at: string | null;
+}
+
+export interface DockerContainerRow extends AgentContainerInfo {
+  agent_id: string;
+  agent_name: string;
+  hostname: string | null;
+}
+
+export interface DockerOverview {
+  summary: {
+    hosts: number;
+    hosts_with_docker: number;
+    containers_total: number;
+    containers_running: number;
+    volumes_total: number;
+    networks_total: number;
+  };
+  hosts: DockerHostSummary[];
+  containers: DockerContainerRow[];
+  volumes: Array<DockerVolumeInfo & { agent_id: string; agent_name: string }>;
+  networks: Array<DockerNetworkInfo & { agent_id: string; agent_name: string }>;
+  logs: Array<DockerContainerLog & { agent_id: string; agent_name: string }>;
 }

@@ -186,7 +186,8 @@ pulse deploy
 
 Nunca misturar IA com regras de negócio.
 
-Inicialmente: resumo automático, análise, correlação de incidentes, root cause, sugestões, predição, detecção de padrões.
+`✅` Assistente de ajuda no dashboard (widget) via Groq (`POST /api/ai/chat`)  
+`⬜` Resumo automático, análise, correlação de incidentes, root cause, sugestões, predição, detecção de padrões
 
 Toda sugestão deve possuir **explicação**. O sistema funciona sem IA.
 

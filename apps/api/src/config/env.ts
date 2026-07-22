@@ -40,6 +40,9 @@ export const env = {
   resendApiKey: read('RESEND_API_KEY'),
   emailFrom: read('EMAIL_FROM'),
   googleClientId: read('GOOGLE_CLIENT_ID'),
+  groqApiKey: read('GROQ_API_KEY'),
+  /** Flagship em produção no Groq — https://console.groq.com/docs/models */
+  groqModel: read('GROQ_MODEL', 'openai/gpt-oss-120b') || 'openai/gpt-oss-120b',
 } as const;
 
 export function assertCriticalEnv(): void {

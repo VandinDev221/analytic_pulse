@@ -13,6 +13,7 @@ import { SslPage } from './pages/SslPage';
 import { DnsPage } from './pages/DnsPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { AgentDetailPage } from './pages/AgentDetailPage';
+import { DockerPage } from './pages/DockerPage';
 import { StatusPage } from './pages/StatusPage';
 import { AppLayout } from './components/AppLayout';
 import { getMe } from './services/api';
@@ -142,6 +143,14 @@ function App() {
           element={
             user
               ? <AppLayout userSlug={userSlug}><AgentDetailPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/docker"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><DockerPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
         />

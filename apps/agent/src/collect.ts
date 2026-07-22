@@ -150,29 +150,202 @@ function readNetwork(): AgentMetricsPayload['network'] {
     .filter((n) => n.iface && n.iface !== 'lo');
 }
 
-async function readContainers(): Promise<NonNullable<AgentMetricsPayload['containers']>> {
+async function collectDocker(): Promise<NonNullable<AgentMetricsPayload['docker']>> {
+  const empty = {
+    available: false,
+    containers: [] as NonNullable<AgentMetricsPayload['containers']>,
+    volumes: [] as NonNullable<NonNullable<AgentMetricsPayload['docker']>['volumes']>,
+    networks: [] as NonNullable<NonNullable<AgentMetricsPayload['docker']>['networks']>,
+    logs: [] as NonNullable<NonNullable<AgentMetricsPayload['docker']>['logs']>,
+  };
+
+  try {
+    await execFileAsync('docker', ['info', '--format', '{{.ServerVersion}}'], {
+      timeout: 2500,
+    });
+  } catch {
+    return empty;
+  }
+
+  const containers: NonNullable<AgentMetricsPayload['containers']> = [];
+  const statsMap = new Map<
+    string,
+    { cpu: number; memUsage: number; memLimit: number; memPct: number }
+  >();
+
+  try {
+    const { stdout: statsOut } = await execFileAsync(
+      'docker',
+      [
+        'stats',
+        '--no-stream',
+        '--format',
+        '{{.ID}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}',
+      ],
+      { timeout: 8000 }
+    );
+    for (const line of statsOut.trim().split('\n').filter(Boolean)) {
+      const [id, cpuPerc, memUsage, memPerc] = line.split('\t');
+      if (!id) continue;
+      const cpu = Number(String(cpuPerc || '0').replace('%', '')) || 0;
+      const memPct = Number(String(memPerc || '0').replace('%', '')) || 0;
+      const usagePart = String(memUsage || '').split('/')[0]?.trim() || '0';
+      const limitPart = String(memUsage || '').split('/')[1]?.trim() || '0';
+      statsMap.set(id.slice(0, 12), {
+        cpu,
+        memUsage: parseDockerSize(usagePart),
+        memLimit: parseDockerSize(limitPart),
+        memPct,
+      });
+    }
+  } catch {
+    /* stats optional */
+  }
+
   try {
     const { stdout } = await execFileAsync(
       'docker',
-      ['ps', '--format', '{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}'],
-      { timeout: 3000 }
+      [
+        'ps',
+        '-a',
+        '--format',
+        '{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.State}}\t{{.Ports}}\t{{.CreatedAt}}',
+      ],
+      { timeout: 5000 }
     );
-    return stdout
-      .trim()
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => {
-        const [id, name, image, ...statusParts] = line.split('\t');
-        return {
-          id: id || '',
-          name: name || '',
-          image: image || '',
-          status: statusParts.join('\t') || '',
-        };
+
+    for (const line of stdout.trim().split('\n').filter(Boolean)) {
+      const [id, name, image, status, state, ports, ...createdParts] =
+        line.split('\t');
+      const shortId = (id || '').slice(0, 12);
+      const stats = statsMap.get(shortId);
+      let restartCount: number | null = null;
+      try {
+        const { stdout: inspectOut } = await execFileAsync(
+          'docker',
+          ['inspect', '-f', '{{.RestartCount}}', id || ''],
+          { timeout: 2000 }
+        );
+        const n = Number(inspectOut.trim());
+        restartCount = Number.isFinite(n) ? n : null;
+      } catch {
+        restartCount = null;
+      }
+
+      containers.push({
+        id: shortId,
+        name: name || '',
+        image: image || '',
+        status: status || '',
+        state: state || null,
+        cpu_pct: stats?.cpu ?? null,
+        mem_usage_bytes: stats?.memUsage ?? null,
+        mem_limit_bytes: stats?.memLimit ?? null,
+        mem_pct: stats?.memPct ?? null,
+        restart_count: restartCount,
+        ports: ports || null,
+        created_at: createdParts.join('\t') || null,
       });
+    }
   } catch {
-    return [];
+    return { ...empty, available: true };
   }
+
+  const volumes: NonNullable<NonNullable<AgentMetricsPayload['docker']>['volumes']> =
+    [];
+  try {
+    const { stdout } = await execFileAsync(
+      'docker',
+      ['volume', 'ls', '--format', '{{.Name}}\t{{.Driver}}\t{{.Mountpoint}}'],
+      { timeout: 4000 }
+    );
+    for (const line of stdout.trim().split('\n').filter(Boolean)) {
+      const [name, driver, mountpoint] = line.split('\t');
+      volumes.push({
+        name: name || '',
+        driver: driver || '',
+        mountpoint: mountpoint || null,
+      });
+    }
+  } catch {
+    /* optional */
+  }
+
+  const networks: NonNullable<
+    NonNullable<AgentMetricsPayload['docker']>['networks']
+  > = [];
+  try {
+    const { stdout } = await execFileAsync(
+      'docker',
+      [
+        'network',
+        'ls',
+        '--format',
+        '{{.ID}}\t{{.Name}}\t{{.Driver}}\t{{.Scope}}',
+      ],
+      { timeout: 4000 }
+    );
+    for (const line of stdout.trim().split('\n').filter(Boolean)) {
+      const [id, name, driver, scope] = line.split('\t');
+      networks.push({
+        id: (id || '').slice(0, 12),
+        name: name || '',
+        driver: driver || '',
+        scope: scope || null,
+      });
+    }
+  } catch {
+    /* optional */
+  }
+
+  const logs: NonNullable<NonNullable<AgentMetricsPayload['docker']>['logs']> =
+    [];
+  const running = containers
+    .filter((c) => (c.state || '').toLowerCase() === 'running')
+    .slice(0, 5);
+  for (const c of running) {
+    try {
+      const { stdout } = await execFileAsync(
+        'docker',
+        ['logs', '--tail', '20', c.id],
+        { timeout: 3000 }
+      );
+      logs.push({
+        container: c.name,
+        container_id: c.id,
+        lines: stdout.trim().split('\n').filter(Boolean).slice(-20),
+      });
+    } catch {
+      /* skip */
+    }
+  }
+
+  return {
+    available: true,
+    containers,
+    volumes,
+    networks,
+    logs,
+  };
+}
+
+function parseDockerSize(raw: string): number {
+  const m = raw.trim().match(/^([\d.]+)\s*([KMGT]?i?B)$/i);
+  if (!m) return 0;
+  const n = Number(m[1]);
+  const unit = (m[2] || 'B').toUpperCase();
+  const mult: Record<string, number> = {
+    B: 1,
+    KB: 1e3,
+    MB: 1e6,
+    GB: 1e9,
+    TB: 1e12,
+    KIB: 1024,
+    MIB: 1024 ** 2,
+    GIB: 1024 ** 3,
+    TIB: 1024 ** 4,
+  };
+  return Math.round(n * (mult[unit] || 1));
 }
 
 async function readServices(): Promise<NonNullable<AgentMetricsPayload['services']>> {
@@ -245,8 +418,8 @@ export async function collectMetrics(
   const load = os.loadavg() as [number, number, number];
   const swapUsed = Math.max(0, mem.swapTotal - mem.swapFree);
 
-  const [containers, services, logs] = await Promise.all([
-    readContainers(),
+  const [docker, services, logs] = await Promise.all([
+    collectDocker(),
     readServices(),
     readLogs(),
   ]);
@@ -294,7 +467,8 @@ export async function collectMetrics(
     disks: readDisks(),
     temperature_c: readTemperatureC(),
     network: readNetwork(),
-    containers,
+    containers: docker.containers,
+    docker,
     services,
     logs,
   };
