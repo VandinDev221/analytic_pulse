@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 11 — Docker**.
+Próximo: **Fase 12 — Kubernetes**.
 
 ---
 
@@ -147,7 +147,12 @@ Docs: [`apps/agent/README.md`](../apps/agent/README.md)
 
 ## Fase 11 — Docker
 
-Containers, CPU, RAM, Restart, Volumes, Network, Logs.
+`✅` Coleta enriquecida no agent (`docker` snapshot: stats, volumes, networks, logs)  
+`✅` API `GET /api/docker/overview` agregando hosts  
+`✅` Página `/docker` (containers, volumes, networks, logs)  
+`✅` Detalhe do agent com métricas Docker  
+
+Sem migration — dados vêm de `agents.latest_metrics`.
 
 ---
 

@@ -9,9 +9,11 @@ Collector leve (Node.js) que envia métricas do host para a API.
 - Disco (mounts principais)
 - Temperatura (thermal zones, quando disponível)
 - Rede (`/proc/net/dev`)
-- Containers Docker (`docker ps`, se existir)
+- Containers Docker (`docker ps` / `stats` / volumes / networks / logs)
 - Serviços systemd em execução
 - Últimas linhas do `journalctl`
+
+A partir da **v0.2.0**, o payload inclui `docker` (snapshot completo). O dashboard agrega em `/docker`.
 
 ## Setup
 

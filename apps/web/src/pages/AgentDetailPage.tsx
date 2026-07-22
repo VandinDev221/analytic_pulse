@@ -213,22 +213,48 @@ export const AgentDetailPage: React.FC = () => {
         <section className="glass dash-panel">
           <div className="dash-panel__head">
             <h2>Containers</h2>
+            <p>
+              {m.docker?.available
+                ? `${(m.docker.containers || m.containers || []).length} via Docker`
+                : 'Snapshot Docker'}
+            </p>
           </div>
-          {(m.containers || []).length === 0 ? (
+          {((m.docker?.containers || m.containers) || []).length === 0 ? (
             <div className="dash-empty">Nenhum container (ou Docker ausente)</div>
           ) : (
-            <ul className="dash-top-list">
-              {m.containers!.map((c) => (
-                <li key={c.id}>
-                  <div className="dash-top-list__main">
-                    <div className="dash-top-list__name">{c.name}</div>
-                    <div className="dash-top-list__meta">
-                      {c.image} · {c.status}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="analytics-table-wrap">
+              <table className="analytics-table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Estado</th>
+                    <th>CPU</th>
+                    <th>RAM</th>
+                    <th>Restarts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(m.docker?.containers || m.containers || []).map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <div>{c.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.image}</div>
+                      </td>
+                      <td>{c.state || c.status}</td>
+                      <td>{c.cpu_pct != null ? `${c.cpu_pct.toFixed(1)}%` : '—'}</td>
+                      <td>{c.mem_pct != null ? `${c.mem_pct.toFixed(1)}%` : '—'}</td>
+                      <td>{c.restart_count ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {(m.docker?.volumes?.length || 0) > 0 && (
+            <p style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>
+              {m.docker!.volumes.length} volumes · {m.docker!.networks.length} networks ·{' '}
+              <Link to="/docker">Ver Docker</Link>
+            </p>
           )}
         </section>
 
@@ -252,6 +278,25 @@ export const AgentDetailPage: React.FC = () => {
           )}
         </section>
       </div>
+
+      {(m.docker?.logs?.length || 0) > 0 && (
+        <section className="glass dash-panel" style={{ marginTop: 16 }}>
+          <div className="dash-panel__head">
+            <h2>Logs Docker</h2>
+            <p>Tail dos containers neste host</p>
+          </div>
+          <div className="agent-logs">
+            {m.docker!.logs.slice(0, 3).flatMap((log) =>
+              log.lines.slice(-8).map((line, i) => (
+                <div key={`${log.container_id}-${i}`} className="agent-logs__line">
+                  <span className="agent-logs__meta">{log.container}</span>
+                  <span>{line}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="glass dash-panel" style={{ marginTop: 16 }}>
         <div className="dash-panel__head">

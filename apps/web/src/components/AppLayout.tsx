@@ -57,6 +57,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
     { path: '/ssl', label: 'SSL', icon: <Lock size={18} /> },
     { path: '/dns', label: 'DNS', icon: <Server size={18} /> },
     { path: '/agents', label: 'Agents', icon: <Cpu size={18} /> },
+    { path: '/docker', label: 'Docker', icon: <Box size={18} /> },
     { path: '/map', label: 'Mapa', icon: <Map size={18} /> },
     { path: '/incidents', label: 'Incidentes', icon: <ShieldAlert size={18} /> },
     { path: '/alerts', label: 'Alertas', icon: <Zap size={18} /> },
