@@ -17,7 +17,7 @@ const MAX_MESSAGES = 12;
 const MAX_CONTENT_LENGTH = 2000;
 
 const FALLBACK_REPLY =
-  'Infelizmente não consigo resolver sua dúvida. Entre em contato com o proprietário.';
+  'Infelizmente não consigo resolver seu problema, entre em contato com o administrador.';
 
 const SYSTEM_PROMPT = `${PRODUCT_KNOWLEDGE}
 
@@ -114,14 +114,11 @@ export class AssistantService {
       // Cliente não pode forjar respostas do assistente — valida HMAC no texto exato
       if (role === 'assistant') {
         if (!verifyAssistantContent(content, sig)) {
-          throw new ValidationError(
-            `Mensagem assistant inválida ou sem assinatura no índice ${i}`
-          );
+          return null;
         }
         if (content.length > MAX_CONTENT_LENGTH) {
-          throw new ValidationError(
-            `Mensagem assistant acima do limite no índice ${i}`
-          );
+          // Histórico grande demais → resposta amigável no chat (não erro técnico)
+          return null;
         }
         result.push({
           role,
