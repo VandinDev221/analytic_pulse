@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 15 — CLI**.
+Próximo: **Fase 16 — AI (módulo isolado)**.
 
 ---
 
@@ -192,14 +192,12 @@ Docs: [`docs/SDKS.md`](SDKS.md)
 
 ## Fase 15 — CLI
 
-```
-pulse login
-pulse monitor create
-pulse status
-pulse incidents
-pulse ssl
-pulse deploy
-```
+`✅` Pacote `@analytic-pulse/cli` (`apps/cli`) — binário `pulse`  
+`✅` `pulse login` / `logout` / `whoami` (API key `ap_pk_…`)  
+`✅` `pulse monitor list|get|create|delete`  
+`✅` `pulse status` · `incidents` · `ssl` · `deploy`  
+
+Docs: [`docs/CLI.md`](CLI.md)
 
 ---
 

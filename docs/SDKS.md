@@ -41,3 +41,5 @@ pulse.list_monitors()
 ```
 
 Contrato HTTP: [`docs/API.md`](API.md) · OpenAPI: `/api/openapi.json`.
+
+CLI oficial: [`docs/CLI.md`](CLI.md) (`apps/cli` → `pulse`).

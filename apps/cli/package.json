@@ -1,0 +1,29 @@
+{
+  "name": "@analytic-pulse/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CLI oficial Analytic Pulse — pulse login, monitor, status, incidents, ssl, deploy",
+  "bin": {
+    "pulse": "./dist/index.js"
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@analytic-pulse/sdk": "*",
+    "@analytic-pulse/shared": "*",
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.0",
+    "typescript": "~5.8.0"
+  }
+}

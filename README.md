@@ -15,6 +15,7 @@ Repositório: [github.com/VandinDev221/analytic_pulse](https://github.com/Vandin
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Como contribuir sem dívida técnica |
 | [docs/API.md](docs/API.md) | API pública REST `/api/v1` + OpenAPI |
 | [docs/SDKS.md](docs/SDKS.md) | SDKs oficiais (TS, Python, Go, …) |
+| [docs/CLI.md](docs/CLI.md) | CLI `pulse` |
 
 > Implementar o roadmap em fatias. Evite big-bang de várias fases no mesmo PR.
 
@@ -25,6 +26,7 @@ apps/
   api/          # API Express (@analytic-pulse/api)
   web/          # Dashboard React (@analytic-pulse/web)
   agent/        # Collector Linux
+  cli/          # CLI oficial (`pulse`)
 packages/
   shared/       # Tipos e erros compartilhados
   ui/           # Design System base
@@ -32,7 +34,7 @@ packages/
 sdks/
   python/ go/ php/ java/ csharp/ rust/
 database/       # schema.sql e migrations
-docs/           # Visão, roadmap, arquitetura, API, SDKs
+docs/           # Visão, roadmap, arquitetura, API, SDKs, CLI
 ```
 
 ### Desenvolvimento local
@@ -109,6 +111,16 @@ cd sdks/go && go test ./...
 ```
 
 Crie uma chave em `/api-keys` e veja [`docs/SDKS.md`](docs/SDKS.md).
+
+### CLI
+
+```bash
+npm run build:cli
+npx pulse login --api-url https://sua-api --api-key ap_pk_...
+npx pulse status
+```
+
+Docs: [`docs/CLI.md`](docs/CLI.md).
 
 
 **Opção B — Neon (recomendado se já tem Postgres no Render)**
