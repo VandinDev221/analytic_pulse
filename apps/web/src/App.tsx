@@ -11,6 +11,8 @@ import { MapPage } from './pages/MapPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SslPage } from './pages/SslPage';
 import { DnsPage } from './pages/DnsPage';
+import { AgentsPage } from './pages/AgentsPage';
+import { AgentDetailPage } from './pages/AgentDetailPage';
 import { StatusPage } from './pages/StatusPage';
 import { AppLayout } from './components/AppLayout';
 import { getMe } from './services/api';
@@ -124,6 +126,22 @@ function App() {
           element={
             user
               ? <AppLayout userSlug={userSlug}><AlertsPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/agents"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><AgentsPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/agents/:id"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><AgentDetailPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
         />

@@ -170,6 +170,45 @@ export async function scanDnsDomain(
   return res.json();
 }
 
+export async function getAgentsOverview(): Promise<import('../types').AgentsOverview> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/agents/overview`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch agents');
+  return res.json();
+}
+
+export async function getAgent(id: string): Promise<import('../types').AgentDetail> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/agents/${id}`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch agent');
+  return res.json();
+}
+
+export async function createAgent(
+  name: string
+): Promise<import('../types').AgentCreated> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/agents`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to create agent');
+  }
+  return res.json();
+}
+
+export async function deleteAgent(id: string): Promise<void> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/agents/${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) throw new Error('Failed to delete agent');
+}
+
 export async function getMonitor(id: string): Promise<Monitor> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { headers });

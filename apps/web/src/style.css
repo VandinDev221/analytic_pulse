@@ -2034,6 +2034,32 @@ select.input option {
   margin-top: 14px;
 }
 
+.agent-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.agent-logs__line {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.agent-logs__meta {
+  display: block;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+  font-size: 11px;
+}
+
 /* ── Uptime grid (status page) ───────────────────────────────── */
 
 .uptime-cell {

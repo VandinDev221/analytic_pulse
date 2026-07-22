@@ -67,6 +67,13 @@ export type {
   DnsDomainScan,
   DnsTypeResult,
   DnsRecordAnswer,
+  Agent,
+  AgentDetail,
+  AgentCreated,
+  AgentsOverview,
+  AgentMetricsPayload,
+  AgentSnapshotPoint,
+  AgentStatus,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';

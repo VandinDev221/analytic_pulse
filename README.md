@@ -69,6 +69,17 @@ O Render permite **apenas 1 Postgres gratuito** por workspace. Escolha uma opç�
    Para a Fase 7 (Analytics), execute [`database/migration_analytics_v1.sql`](database/migration_analytics_v1.sql).
    Para a Fase 8 (SSL), execute [`database/migration_ssl_v1.sql`](database/migration_ssl_v1.sql).
    Para a Fase 9 (DNS), execute [`database/migration_dns_v1.sql`](database/migration_dns_v1.sql).
+   Para a Fase 10 (Linux Agent), execute [`database/migration_agents_v1.sql`](database/migration_agents_v1.sql).
+
+### Linux Agent
+
+Ver [`apps/agent/README.md`](apps/agent/README.md). Crie um agent em `/agents`, copie o token e rode:
+
+```bash
+cd apps/agent && npm run build
+PULSE_API_URL=https://sua-api PULSE_AGENT_TOKEN=ap_agent_... npm start
+```
+
 
 **Opção B — Neon (recomendado se já tem Postgres no Render)**
 

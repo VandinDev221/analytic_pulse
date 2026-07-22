@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 10 — Linux Agent**.
+Próximo: **Fase 11 — Docker**.
 
 ---
 
@@ -134,7 +134,14 @@ Migration: [`database/migration_dns_v1.sql`](../database/migration_dns_v1.sql)
 
 ## Fase 10 — Linux Agent
 
-CPU, RAM, Swap, Disco, Temperatura, Rede, Containers, Serviços, Logs.
+`✅` Collector `apps/agent` (CPU, RAM, Swap, Disco, Temp, Rede)  
+`✅` Containers Docker, serviços systemd, journal logs  
+`✅` Tokens de ingestão + snapshots (7d)  
+`✅` Páginas `/agents` e `/agents/:id`  
+`✅` API `POST /api/agents/ingest`, CRUD `/api/agents`  
+
+Migration: [`database/migration_agents_v1.sql`](../database/migration_agents_v1.sql)  
+Docs: [`apps/agent/README.md`](../apps/agent/README.md)
 
 ---
 

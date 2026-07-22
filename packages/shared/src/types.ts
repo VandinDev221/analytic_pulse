@@ -835,3 +835,131 @@ export interface DnsDomainScan {
     dnssec: boolean;
   };
 }
+
+// ── Linux Agent (Fase 10) ─────────────────────────────────────
+
+export type AgentStatus = 'pending' | 'online' | 'offline' | 'disabled';
+
+export interface AgentOsInfo {
+  platform?: string;
+  release?: string;
+  arch?: string;
+  uptime_sec?: number;
+  distro?: string | null;
+}
+
+export interface AgentCpuMetrics {
+  usage_pct: number;
+  cores: number;
+  load_avg: [number, number, number];
+}
+
+export interface AgentMemoryMetrics {
+  total_bytes: number;
+  used_bytes: number;
+  available_bytes: number;
+  usage_pct: number;
+}
+
+export interface AgentSwapMetrics {
+  total_bytes: number;
+  used_bytes: number;
+  usage_pct: number;
+}
+
+export interface AgentDiskMetrics {
+  mount: string;
+  fs?: string | null;
+  total_bytes: number;
+  used_bytes: number;
+  usage_pct: number;
+}
+
+export interface AgentNetworkIface {
+  iface: string;
+  rx_bytes: number;
+  tx_bytes: number;
+}
+
+export interface AgentContainerInfo {
+  id: string;
+  name: string;
+  image: string;
+  status: string;
+}
+
+export interface AgentServiceInfo {
+  name: string;
+  active: string;
+  sub?: string | null;
+}
+
+export interface AgentLogLine {
+  unit?: string | null;
+  message: string;
+  ts?: string | null;
+}
+
+export interface AgentMetricsPayload {
+  hostname?: string;
+  version?: string;
+  os?: AgentOsInfo;
+  cpu?: AgentCpuMetrics;
+  memory?: AgentMemoryMetrics;
+  swap?: AgentSwapMetrics;
+  disks?: AgentDiskMetrics[];
+  temperature_c?: number | null;
+  network?: AgentNetworkIface[];
+  containers?: AgentContainerInfo[];
+  services?: AgentServiceInfo[];
+  logs?: AgentLogLine[];
+  collected_at?: string;
+}
+
+export interface Agent {
+  id: string;
+  user_id: string;
+  name: string;
+  hostname: string | null;
+  token_prefix: string;
+  status: AgentStatus;
+  agent_version: string | null;
+  os_info: AgentOsInfo;
+  latest_metrics: AgentMetricsPayload;
+  last_seen_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AgentCreated extends Agent {
+  /** Token em claro — retornado apenas na criação */
+  token: string;
+}
+
+export interface CreateAgentInput {
+  name: string;
+}
+
+export interface AgentSnapshotPoint {
+  collected_at: string;
+  cpu_pct: number | null;
+  mem_pct: number | null;
+  swap_pct: number | null;
+  disk_pct: number | null;
+  temperature_c: number | null;
+  load_1: number | null;
+}
+
+export interface AgentDetail extends Agent {
+  history: AgentSnapshotPoint[];
+}
+
+export interface AgentsOverview {
+  summary: {
+    total: number;
+    online: number;
+    offline: number;
+    pending: number;
+  };
+  agents: Agent[];
+}
