@@ -49,4 +49,4 @@ Gerenciamento das chaves (JWT do dashboard):
 
 Migration: [`database/migration_public_api_v1.sql`](../database/migration_public_api_v1.sql).
 
-GraphQL e SDKs ficam para fases seguintes — os use cases já são reutilizáveis via services.
+SDKs oficiais: [`docs/SDKS.md`](SDKS.md) (`packages/sdk`, `sdks/python`, `sdks/go`). GraphQL fica para o futuro — os use cases já são reutilizáveis via services.

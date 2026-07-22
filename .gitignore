@@ -39,3 +39,12 @@ Thumbs.db
 
 # Cursor / local tooling
 .cursor/
+
+# Python / Go SDK artifacts
+sdks/python/.venv/
+sdks/python/**/*.egg-info/
+sdks/python/dist/
+sdks/python/build/
+sdks/go/bin/
+__pycache__/
+*.pyc

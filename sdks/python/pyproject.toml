@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "analytic-pulse"
+version = "0.1.0"
+description = "SDK oficial Python para a API pública Analytic Pulse (/api/v1)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Analytic Pulse" }]
+keywords = ["analytic-pulse", "uptime", "monitoring", "sdk"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/VandinDev221/analytic_pulse"
+Documentation = "https://github.com/VandinDev221/analytic_pulse/blob/main/docs/API.md"
+
+[tool.setuptools.packages.find]
+include = ["analytic_pulse*"]

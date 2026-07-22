@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 14 — SDKs**.
+Próximo: **Fase 15 — CLI**.
 
 ---
 
@@ -181,7 +181,12 @@ Docs: [`docs/API.md`](API.md)
 
 ## Fase 14 — SDKs
 
-JavaScript, TypeScript, Python, Go, PHP, Java, C#, Rust.
+`✅` TypeScript/JavaScript — `@analytic-pulse/sdk` (`packages/sdk`)  
+`✅` Python — `analytic-pulse` (`sdks/python`)  
+`✅` Go — `sdks/go`  
+`⬜` PHP / Java / C# / Rust — scaffolds com exemplos HTTP  
+
+Docs: [`docs/SDKS.md`](SDKS.md)
 
 ---
 

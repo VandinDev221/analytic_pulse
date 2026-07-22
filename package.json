@@ -18,6 +18,7 @@
     "build:api": "npm run build -w @analytic-pulse/shared && npm run build -w @analytic-pulse/api",
     "build:web": "npm run build -w @analytic-pulse/shared && npm run build -w @analytic-pulse/web",
     "build": "npm run build -w @analytic-pulse/shared && npm run build -w @analytic-pulse/api && npm run build -w @analytic-pulse/web",
+    "build:sdk": "npm run build -w @analytic-pulse/shared && npm run build -w @analytic-pulse/sdk",
     "build:backend": "npm run build:api",
     "build:frontend": "npm run build:web"
   },

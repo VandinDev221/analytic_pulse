@@ -14,6 +14,7 @@ Repositório: [github.com/VandinDev221/analytic_pulse](https://github.com/Vandin
 | [docs/UI_GUIDELINES.md](docs/UI_GUIDELINES.md) | Design System, UX e anti-padrões |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Como contribuir sem dívida técnica |
 | [docs/API.md](docs/API.md) | API pública REST `/api/v1` + OpenAPI |
+| [docs/SDKS.md](docs/SDKS.md) | SDKs oficiais (TS, Python, Go, …) |
 
 > Implementar o roadmap em fatias. Evite big-bang de várias fases no mesmo PR.
 
@@ -23,11 +24,15 @@ Repositório: [github.com/VandinDev221/analytic_pulse](https://github.com/Vandin
 apps/
   api/          # API Express (@analytic-pulse/api)
   web/          # Dashboard React (@analytic-pulse/web)
+  agent/        # Collector Linux
 packages/
   shared/       # Tipos e erros compartilhados
   ui/           # Design System base
+  sdk/          # SDK TypeScript/JS (@analytic-pulse/sdk)
+sdks/
+  python/ go/ php/ java/ csharp/ rust/
 database/       # schema.sql e migrations
-docs/           # Visão, roadmap, arquitetura
+docs/           # Visão, roadmap, arquitetura, API, SDKs
 ```
 
 ### Desenvolvimento local
@@ -75,6 +80,7 @@ O Render permite **apenas 1 Postgres gratuito** por workspace. Escolha uma opç�
    A Fase 12 (Kubernetes) idem — agrega `kubectl` via agents (`/kubernetes`).
    Para a Fase 13 (API pública), execute [`database/migration_public_api_v1.sql`](database/migration_public_api_v1.sql).
    Docs da API: [`docs/API.md`](docs/API.md) · Swagger: `/api/docs`.
+   SDKs: [`docs/SDKS.md`](docs/SDKS.md) (`packages/sdk`, `sdks/python`, `sdks/go`).
 
 ### Linux Agent
 
@@ -88,6 +94,21 @@ PULSE_API_URL=https://sua-api PULSE_AGENT_TOKEN=ap_agent_... npm start
 Com Docker no host, o agent (v0.2+) envia containers, CPU/RAM, restarts, volumes, networks e logs — visíveis em `/docker`.
 
 Com `kubectl` configurado no host, o agent (v0.3+) envia o snapshot do cluster — visível em `/kubernetes`.
+
+### SDKs (API pública)
+
+```bash
+# TypeScript
+npm run build -w @analytic-pulse/sdk
+
+# Python
+cd sdks/python && pip install -e .
+
+# Go
+cd sdks/go && go test ./...
+```
+
+Crie uma chave em `/api-keys` e veja [`docs/SDKS.md`](docs/SDKS.md).
 
 
 **Opção B — Neon (recomendado se já tem Postgres no Render)**

@@ -60,6 +60,7 @@ uma plataforma open-source de observabilidade focada em monitoramento de uptime.
 - Página /docker: containers, CPU/RAM, restarts, volumes, networks e logs.
 - Página /kubernetes: pods, deployments, services, ingress, nodes, namespaces e PVC (via kubectl no agent).
 - Página /api-keys: chaves ap_pk_… para API pública /api/v1; docs em /api/docs (OpenAPI/Swagger).
+- SDKs oficiais: TypeScript (@analytic-pulse/sdk), Python (analytic-pulse), Go (sdks/go).
 
 ### Mapa
 - Página /map: visão mundial de monitores por região com status/latência.
@@ -71,7 +72,7 @@ uma plataforma open-source de observabilidade focada em monitoramento de uptime.
 ## O que ainda NÃO existe (não invente)
 - Análise automática de root cause por IA além deste chat de ajuda.
 - Predição de falhas, correlação avançada de incidentes via IA.
-- SDKs oficiais / CLI (roadmap futuro).
+- CLI oficial (pulse) / SDKs PHP·Java·C#·Rust completos (scaffolds apenas).
 - GraphQL (REST /api/v1 primeiro).
 
 ## Limitações honestas
