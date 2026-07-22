@@ -16,6 +16,7 @@ Repositório: [github.com/VandinDev221/analytic_pulse](https://github.com/Vandin
 | [docs/API.md](docs/API.md) | API pública REST `/api/v1` + OpenAPI |
 | [docs/SDKS.md](docs/SDKS.md) | SDKs oficiais (TS, Python, Go, …) |
 | [docs/CLI.md](docs/CLI.md) | CLI `pulse` |
+| [docs/AI.md](docs/AI.md) | Módulo de IA isolado (chat + análise) |
 
 > Implementar o roadmap em fatias. Evite big-bang de várias fases no mesmo PR.
 

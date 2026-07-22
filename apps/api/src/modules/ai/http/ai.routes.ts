@@ -5,10 +5,16 @@ import {
   type AuthenticatedRequest,
 } from '../../../middleware/auth';
 import { createRateLimiter } from '../../../middleware/rateLimit';
+import { PgIncidentRepository } from '../../incidents/repositories/PgIncidentRepository';
+import { IncidentService } from '../../incidents/services/IncidentService';
 import { AssistantService } from '../services/AssistantService';
+import { IncidentAnalyzerService } from '../services/IncidentAnalyzerService';
 
 const router = Router();
-const service = new AssistantService();
+const assistant = new AssistantService();
+const analyzer = new IncidentAnalyzerService(
+  new IncidentService(new PgIncidentRepository())
+);
 
 router.use(requireAuth as never);
 
@@ -18,6 +24,14 @@ const aiChatRateLimit = createRateLimiter({
   max: 20,
   keyFn: (req) => `ai:chat:${req.userId ?? 'anon'}`,
   message: 'Limite de mensagens do assistente atingido. Aguarde um minuto.',
+});
+
+/** Análise é mais cara — 5 req/min. */
+const aiAnalyzeRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 5,
+  keyFn: (req) => `ai:analyze:${req.userId ?? 'anon'}`,
+  message: 'Limite de análises de IA atingido. Aguarde um minuto.',
 });
 
 function handleError(res: Response, error: unknown) {
@@ -32,13 +46,39 @@ function handleError(res: Response, error: unknown) {
   return res.status(500).json({ error: message });
 }
 
+function paramId(req: AuthenticatedRequest): string {
+  const id = req.params.id;
+  return Array.isArray(id) ? id[0]! : id!;
+}
+
+router.get('/status', async (_req: AuthenticatedRequest, res) => {
+  try {
+    return res.json(analyzer.getStatus());
+  } catch (error) {
+    return handleError(res, error);
+  }
+});
+
 router.post('/chat', aiChatRateLimit as never, async (req: AuthenticatedRequest, res) => {
   try {
-    const message = await service.chat(req.body?.messages);
+    const message = await assistant.chat(req.body?.messages);
     return res.json({ message });
   } catch (error) {
     return handleError(res, error);
   }
 });
+
+router.post(
+  '/analyze-incident/:id',
+  aiAnalyzeRateLimit as never,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const analysis = await analyzer.analyze(req.userId!, paramId(req));
+      return res.json(analysis);
+    } catch (error) {
+      return handleError(res, error);
+    }
+  }
+);
 
 export default router;

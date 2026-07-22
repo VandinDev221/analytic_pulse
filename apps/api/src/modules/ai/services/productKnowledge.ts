@@ -71,10 +71,14 @@ uma plataforma open-source de observabilidade focada em monitoramento de uptime.
 - Não é o mesmo que este assistente de IA do dashboard.
 
 ## O que ainda NÃO existe (não invente)
-- Análise automática de root cause por IA além deste chat de ajuda.
-- Predição de falhas, correlação avançada de incidentes via IA.
+- Predição de falhas e correlação automática entre múltiplos incidentes via IA.
+- Detecção de padrões / anomalias contínua.
 - SDKs PHP·Java·C#·Rust completos (scaffolds apenas).
 - GraphQL (REST /api/v1 primeiro).
+
+## IA (o que existe)
+- Chat de ajuda no dashboard (widget).
+- Análise sob demanda de um incidente (botão no detalhe) — hipóteses e ações com explicação. Nunca altera o incidente sozinha.
 
 ## Limitações honestas
 - Em hosting gratuito a API pode "dormir" e o primeiro request demorar.

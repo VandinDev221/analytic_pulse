@@ -19,6 +19,7 @@ import type {
   IncidentTimelineEvent,
 } from '../types';
 import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { IncidentAiAnalysisCard } from '../components/IncidentAiAnalysisCard';
 
 function formatDuration(ms: number): string {
   const sec = Math.floor(ms / 1000);
@@ -236,6 +237,8 @@ export const IncidentDetailPage: React.FC = () => {
 
             {/* Meta + comments */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <IncidentAiAnalysisCard incidentId={incident.id} />
+
               <div className="glass" style={{ padding: 24 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Detalhes</h2>
                 <div className="form-group">

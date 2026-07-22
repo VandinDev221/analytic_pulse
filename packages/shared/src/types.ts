@@ -1185,3 +1185,33 @@ export interface CreateApiKeyInput {
 export interface ApiKeysOverview {
   keys: ApiKey[];
 }
+
+// ── AI (Fase 16) ──────────────────────────────────────────────
+
+export type AiSuggestionRisk = 'low' | 'medium' | 'high';
+
+export interface AiExplainedItem {
+  text: string;
+  explanation: string;
+}
+
+export interface AiSuggestedAction extends AiExplainedItem {
+  risk: AiSuggestionRisk;
+}
+
+export interface IncidentAiAnalysis {
+  incident_id: string;
+  summary: string;
+  possible_causes: AiExplainedItem[];
+  suggested_actions: AiSuggestedAction[];
+  /** Meta-explicação do raciocínio — obrigatória */
+  explanation: string;
+  generated_at: string;
+  model: string;
+  disclaimer: string;
+}
+
+export interface AiStatus {
+  enabled: boolean;
+  model: string | null;
+}

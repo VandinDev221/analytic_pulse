@@ -97,6 +97,10 @@ export type {
   ApiKeysOverview,
   CreateApiKeyInput,
   ApiKeyScope,
+  IncidentAiAnalysis,
+  AiStatus,
+  AiExplainedItem,
+  AiSuggestedAction,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';

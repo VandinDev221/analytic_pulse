@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 16 — AI (módulo isolado)**.
+Próximo: roadmap concluído nas fases planejadas — iterar melhorias e fatias restantes (predição / correlação).
 
 ---
 
@@ -206,9 +206,11 @@ Docs: [`docs/CLI.md`](CLI.md)
 Nunca misturar IA com regras de negócio.
 
 `✅` Assistente de ajuda no dashboard (widget) via Groq (`POST /api/ai/chat`)  
-`⬜` Resumo automático, análise, correlação de incidentes, root cause, sugestões, predição, detecção de padrões
+`✅` Análise sob demanda de incidente (`POST /api/ai/analyze-incident/:id`) com causas/ações + explicação  
+`✅` `GET /api/ai/status` + botão no detalhe do incidente  
+`⬜` Correlação multi-incidente, predição, detecção contínua de padrões  
 
-Toda sugestão deve possuir **explicação**. O sistema funciona sem IA.
+Toda sugestão possui **explicação**. O sistema funciona sem `GROQ_API_KEY` (UI esconde a análise).
 
 ---
 

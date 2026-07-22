@@ -620,3 +620,25 @@ export async function chatWithAssistant(
   const data = await res.json();
   return data.message as AssistantChatMessage;
 }
+
+export async function getAiStatus(): Promise<import('../types').AiStatus> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/ai/status`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch AI status');
+  return res.json();
+}
+
+export async function analyzeIncidentWithAi(
+  id: string
+): Promise<import('../types').IncidentAiAnalysis> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/ai/analyze-incident/${id}`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha na análise de IA');
+  }
+  return res.json();
+}
