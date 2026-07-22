@@ -14,6 +14,7 @@ import { DnsPage } from './pages/DnsPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { AgentDetailPage } from './pages/AgentDetailPage';
 import { DockerPage } from './pages/DockerPage';
+import { KubernetesPage } from './pages/KubernetesPage';
 import { StatusPage } from './pages/StatusPage';
 import { AppLayout } from './components/AppLayout';
 import { getMe } from './services/api';
@@ -151,6 +152,14 @@ function App() {
           element={
             user
               ? <AppLayout userSlug={userSlug}><DockerPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/kubernetes"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><KubernetesPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
         />

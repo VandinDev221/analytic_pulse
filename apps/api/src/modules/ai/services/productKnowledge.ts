@@ -55,8 +55,10 @@ uma plataforma open-source de observabilidade focada em monitoramento de uptime.
 - Scan de domínio e histórico.
 
 ### Agents (Linux)
-- Página /agents: collector em servidor Linux (CPU, RAM, disco, rede, Docker, systemd).
+- Página /agents: collector em servidor Linux (CPU, RAM, disco, rede, Docker, Kubernetes, systemd).
 - Token de ingestão; snapshots ~7 dias.
+- Página /docker: containers, CPU/RAM, restarts, volumes, networks e logs.
+- Página /kubernetes: pods, deployments, services, ingress, nodes, namespaces e PVC (via kubectl no agent).
 
 ### Mapa
 - Página /map: visão mundial de monitores por região com status/latência.
@@ -68,7 +70,6 @@ uma plataforma open-source de observabilidade focada em monitoramento de uptime.
 ## O que ainda NÃO existe (não invente)
 - Análise automática de root cause por IA além deste chat de ajuda.
 - Predição de falhas, correlação avançada de incidentes via IA.
-- Kubernetes UI completa, Docker UI dedicada (roadmap futuro).
 - API pública documentada / SDKs / CLI (roadmap futuro).
 
 ## Limitações honestas

@@ -10,10 +10,12 @@ Collector leve (Node.js) que envia métricas do host para a API.
 - Temperatura (thermal zones, quando disponível)
 - Rede (`/proc/net/dev`)
 - Containers Docker (`docker ps` / `stats` / volumes / networks / logs)
+- Kubernetes (`kubectl`: pods, deployments, services, ingress, nodes, namespaces, PVC)
 - Serviços systemd em execução
 - Últimas linhas do `journalctl`
 
-A partir da **v0.2.0**, o payload inclui `docker` (snapshot completo). O dashboard agrega em `/docker`.
+A partir da **v0.2.0**, o payload inclui `docker` (snapshot completo). O dashboard agrega em `/docker`.  
+A partir da **v0.3.0**, inclui `kubernetes` quando o host tem `kubectl` e acesso ao cluster — agregado em `/kubernetes`.
 
 ## Setup
 

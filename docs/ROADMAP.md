@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 12 — Kubernetes**.
+Próximo: **Fase 13 — API pública**.
 
 ---
 
@@ -158,7 +158,12 @@ Sem migration — dados vêm de `agents.latest_metrics`.
 
 ## Fase 12 — Kubernetes
 
-Pods, Deployments, Ingress, Nodes, Namespaces, Services, PVC.
+`✅` Coleta no agent via `kubectl` (pods, deployments, services, ingress, nodes, namespaces, pvc)  
+`✅` API `GET /api/kubernetes/overview` agregando hosts  
+`✅` Página `/kubernetes` com filtros por host/namespace  
+`✅` Detalhe do agent com resumo do cluster  
+
+Sem migration — dados vêm de `agents.latest_metrics.kubernetes`.
 
 ---
 

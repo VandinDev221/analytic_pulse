@@ -82,6 +82,16 @@ export type {
   DockerVolumeInfo,
   DockerNetworkInfo,
   DockerContainerLog,
+  KubernetesOverview,
+  KubernetesSnapshot,
+  KubernetesHostSummary,
+  K8sPodInfo,
+  K8sDeploymentInfo,
+  K8sServiceInfo,
+  K8sIngressInfo,
+  K8sNodeInfo,
+  K8sNamespaceInfo,
+  K8sPvcInfo,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';

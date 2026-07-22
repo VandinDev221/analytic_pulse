@@ -947,6 +947,7 @@ export interface AgentMetricsPayload {
   network?: AgentNetworkIface[];
   containers?: AgentContainerInfo[];
   docker?: DockerSnapshot;
+  kubernetes?: KubernetesSnapshot;
   services?: AgentServiceInfo[];
   logs?: AgentLogLine[];
   collected_at?: string;
@@ -1036,4 +1037,122 @@ export interface DockerOverview {
   volumes: Array<DockerVolumeInfo & { agent_id: string; agent_name: string }>;
   networks: Array<DockerNetworkInfo & { agent_id: string; agent_name: string }>;
   logs: Array<DockerContainerLog & { agent_id: string; agent_name: string }>;
+}
+
+// ── Kubernetes (Fase 12) ──────────────────────────────────────
+
+export interface K8sPodInfo {
+  name: string;
+  namespace: string;
+  status: string;
+  ready: string;
+  restarts: number;
+  node?: string | null;
+  age?: string | null;
+  ip?: string | null;
+}
+
+export interface K8sDeploymentInfo {
+  name: string;
+  namespace: string;
+  ready: string;
+  up_to_date: number;
+  available: number;
+  age?: string | null;
+}
+
+export interface K8sServiceInfo {
+  name: string;
+  namespace: string;
+  type: string;
+  cluster_ip?: string | null;
+  external_ip?: string | null;
+  ports?: string | null;
+  age?: string | null;
+}
+
+export interface K8sIngressInfo {
+  name: string;
+  namespace: string;
+  class?: string | null;
+  hosts?: string | null;
+  address?: string | null;
+  age?: string | null;
+}
+
+export interface K8sNodeInfo {
+  name: string;
+  status: string;
+  roles?: string | null;
+  version?: string | null;
+  age?: string | null;
+  cpu?: string | null;
+  memory?: string | null;
+}
+
+export interface K8sNamespaceInfo {
+  name: string;
+  status: string;
+  age?: string | null;
+}
+
+export interface K8sPvcInfo {
+  name: string;
+  namespace: string;
+  status: string;
+  volume?: string | null;
+  capacity?: string | null;
+  storage_class?: string | null;
+  age?: string | null;
+}
+
+export interface KubernetesSnapshot {
+  available: boolean;
+  context?: string | null;
+  pods: K8sPodInfo[];
+  deployments: K8sDeploymentInfo[];
+  services: K8sServiceInfo[];
+  ingresses: K8sIngressInfo[];
+  nodes: K8sNodeInfo[];
+  namespaces: K8sNamespaceInfo[];
+  pvcs: K8sPvcInfo[];
+}
+
+export interface KubernetesHostSummary {
+  agent_id: string;
+  agent_name: string;
+  hostname: string | null;
+  status: AgentStatus;
+  available: boolean;
+  context: string | null;
+  pods_total: number;
+  pods_running: number;
+  deployments: number;
+  services: number;
+  nodes: number;
+  namespaces: number;
+  last_seen_at: string | null;
+}
+
+export interface KubernetesOverview {
+  summary: {
+    hosts: number;
+    hosts_with_k8s: number;
+    pods_total: number;
+    pods_running: number;
+    deployments_total: number;
+    services_total: number;
+    nodes_total: number;
+    namespaces_total: number;
+    ingresses_total: number;
+    pvcs_total: number;
+  };
+  hosts: KubernetesHostSummary[];
+  pods: Array<K8sPodInfo & { agent_id: string; agent_name: string }>;
+  deployments: Array<K8sDeploymentInfo & { agent_id: string; agent_name: string }>;
+  services: Array<K8sServiceInfo & { agent_id: string; agent_name: string }>;
+  ingresses: Array<K8sIngressInfo & { agent_id: string; agent_name: string }>;
+  nodes: Array<K8sNodeInfo & { agent_id: string; agent_name: string }>;
+  namespaces: Array<K8sNamespaceInfo & { agent_id: string; agent_name: string }>;
+  pvcs: Array<K8sPvcInfo & { agent_id: string; agent_name: string }>;
 }

@@ -71,6 +71,7 @@ O Render permite **apenas 1 Postgres gratuito** por workspace. Escolha uma opç�
    Para a Fase 9 (DNS), execute [`database/migration_dns_v1.sql`](database/migration_dns_v1.sql).
    Para a Fase 10 (Linux Agent), execute [`database/migration_agents_v1.sql`](database/migration_agents_v1.sql).
    A Fase 11 (Docker) não exige migration — agrega snapshots dos agents.
+   A Fase 12 (Kubernetes) idem — agrega `kubectl` via agents (`/kubernetes`).
 
 ### Linux Agent
 
@@ -82,6 +83,8 @@ PULSE_API_URL=https://sua-api PULSE_AGENT_TOKEN=ap_agent_... npm start
 ```
 
 Com Docker no host, o agent (v0.2+) envia containers, CPU/RAM, restarts, volumes, networks e logs — visíveis em `/docker`.
+
+Com `kubectl` configurado no host, o agent (v0.3+) envia o snapshot do cluster — visível em `/kubernetes`.
 
 
 **Opção B — Neon (recomendado se já tem Postgres no Render)**

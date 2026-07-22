@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X, ShieldAlert, Zap, Globe, Map, BarChart3, Lock, Server, Cpu, Box
+  Activity, LayoutDashboard, LogOut, ExternalLink, Bell, Send, MessageCircle, Menu, X, ShieldAlert, Zap, Globe, Map, BarChart3, Lock, Server, Cpu, Box, Ship
 } from 'lucide-react';
 import {
   getNotificationSettings,
@@ -58,6 +58,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
     { path: '/dns', label: 'DNS', icon: <Server size={18} /> },
     { path: '/agents', label: 'Agents', icon: <Cpu size={18} /> },
     { path: '/docker', label: 'Docker', icon: <Box size={18} /> },
+    { path: '/kubernetes', label: 'Kubernetes', icon: <Ship size={18} /> },
     { path: '/map', label: 'Mapa', icon: <Map size={18} /> },
     { path: '/incidents', label: 'Incidentes', icon: <ShieldAlert size={18} /> },
     { path: '/alerts', label: 'Alertas', icon: <Zap size={18} /> },

@@ -279,6 +279,62 @@ export const AgentDetailPage: React.FC = () => {
         </section>
       </div>
 
+      {m.kubernetes?.available && (
+        <section className="glass dash-panel" style={{ marginTop: 16 }}>
+          <div className="dash-panel__head">
+            <h2>Kubernetes</h2>
+            <p>
+              Context {m.kubernetes.context || '—'} ·{' '}
+              <Link to="/kubernetes">Ver cluster</Link>
+            </p>
+          </div>
+          <div className="dash-kpi-grid analytics-kpi" style={{ marginBottom: 12 }}>
+            <SmartStatCard
+              label="Pods"
+              value={String(m.kubernetes.pods.length)}
+              hint={`${m.kubernetes.pods.filter((p) => p.status === 'Running').length} running`}
+            />
+            <SmartStatCard
+              label="Deployments"
+              value={String(m.kubernetes.deployments.length)}
+            />
+            <SmartStatCard label="Nodes" value={String(m.kubernetes.nodes.length)} />
+            <SmartStatCard
+              label="Namespaces"
+              value={String(m.kubernetes.namespaces.length)}
+            />
+          </div>
+          {(m.kubernetes.pods || []).length > 0 && (
+            <div className="analytics-table-wrap">
+              <table className="analytics-table">
+                <thead>
+                  <tr>
+                    <th>Pod</th>
+                    <th>NS</th>
+                    <th>Status</th>
+                    <th>Ready</th>
+                    <th>Restarts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {m.kubernetes.pods.slice(0, 12).map((p) => (
+                    <tr key={`${p.namespace}:${p.name}`}>
+                      <td>
+                        <code style={{ fontSize: 12 }}>{p.name}</code>
+                      </td>
+                      <td>{p.namespace}</td>
+                      <td>{p.status}</td>
+                      <td>{p.ready}</td>
+                      <td>{p.restarts}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
       {(m.docker?.logs?.length || 0) > 0 && (
         <section className="glass dash-panel" style={{ marginTop: 16 }}>
           <div className="dash-panel__head">

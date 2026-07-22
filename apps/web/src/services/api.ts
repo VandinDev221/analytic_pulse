@@ -216,6 +216,15 @@ export async function getDockerOverview(): Promise<import('../types').DockerOver
   return res.json();
 }
 
+export async function getKubernetesOverview(): Promise<
+  import('../types').KubernetesOverview
+> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/kubernetes/overview`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch Kubernetes overview');
+  return res.json();
+}
+
 export async function getMonitor(id: string): Promise<Monitor> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { headers });

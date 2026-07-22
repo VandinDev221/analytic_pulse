@@ -348,6 +348,258 @@ function parseDockerSize(raw: string): number {
   return Math.round(n * (mult[unit] || 1));
 }
 
+function ageFromTimestamp(ts?: string | null): string | null {
+  if (!ts) return null;
+  const ms = Date.now() - new Date(ts).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m`;
+  const hr = Math.floor(min / 60);
+  if (hr < 48) return `${hr}h`;
+  return `${Math.floor(hr / 24)}d`;
+}
+
+async function kubectlJson(args: string[], timeout = 8000): Promise<unknown | null> {
+  try {
+    const { stdout } = await execFileAsync('kubectl', args, {
+      timeout,
+      maxBuffer: 8 * 1024 * 1024,
+    });
+    return JSON.parse(stdout);
+  } catch {
+    return null;
+  }
+}
+
+async function collectKubernetes(): Promise<
+  NonNullable<AgentMetricsPayload['kubernetes']>
+> {
+  const empty: NonNullable<AgentMetricsPayload['kubernetes']> = {
+    available: false,
+    context: null,
+    pods: [],
+    deployments: [],
+    services: [],
+    ingresses: [],
+    nodes: [],
+    namespaces: [],
+    pvcs: [],
+  };
+
+  try {
+    await execFileAsync('kubectl', ['version', '--client', '--output=json'], {
+      timeout: 3000,
+    });
+  } catch {
+    return empty;
+  }
+
+  let context: string | null = null;
+  try {
+    const { stdout } = await execFileAsync(
+      'kubectl',
+      ['config', 'current-context'],
+      { timeout: 2000 }
+    );
+    context = stdout.trim() || null;
+  } catch {
+    context = null;
+  }
+
+  const nsProbe = await kubectlJson(['get', 'ns', '-o', 'json'], 5000);
+  if (!nsProbe || typeof nsProbe !== 'object') {
+    return { ...empty, context };
+  }
+
+  const [podsJson, deploysJson, svcJson, ingJson, nodesJson, pvcJson] =
+    await Promise.all([
+      kubectlJson(['get', 'pods', '-A', '-o', 'json'], 10000),
+      kubectlJson(['get', 'deploy', '-A', '-o', 'json'], 8000),
+      kubectlJson(['get', 'svc', '-A', '-o', 'json'], 8000),
+      kubectlJson(['get', 'ingress', '-A', '-o', 'json'], 8000),
+      kubectlJson(['get', 'nodes', '-o', 'json'], 8000),
+      kubectlJson(['get', 'pvc', '-A', '-o', 'json'], 8000),
+    ]);
+
+  type KItem = {
+    metadata?: {
+      name?: string;
+      namespace?: string;
+      creationTimestamp?: string;
+      labels?: Record<string, string>;
+    };
+    status?: Record<string, unknown>;
+    spec?: Record<string, unknown>;
+  };
+
+  const items = (raw: unknown): KItem[] => {
+    if (!raw || typeof raw !== 'object') return [];
+    const arr = (raw as { items?: KItem[] }).items;
+    return Array.isArray(arr) ? arr : [];
+  };
+
+  const pods = items(podsJson).map((p) => {
+    const containerStatuses =
+      (p.status?.containerStatuses as
+        | Array<{ ready?: boolean; restartCount?: number }>
+        | undefined) || [];
+    const readyCount = containerStatuses.filter((c) => c.ready).length;
+    const total = containerStatuses.length || 0;
+    const restarts = containerStatuses.reduce(
+      (sum, c) => sum + (c.restartCount || 0),
+      0
+    );
+    return {
+      name: p.metadata?.name || '',
+      namespace: p.metadata?.namespace || 'default',
+      status: String(p.status?.phase || 'Unknown'),
+      ready: `${readyCount}/${total || '?'}`,
+      restarts,
+      node: (p.spec?.nodeName as string) || null,
+      age: ageFromTimestamp(p.metadata?.creationTimestamp),
+      ip: (p.status?.podIP as string) || null,
+    };
+  });
+
+  const deployments = items(deploysJson).map((d) => {
+    const ready = Number(d.status?.readyReplicas || 0);
+    const desired = Number(
+      (d.spec as { replicas?: number } | undefined)?.replicas ??
+        d.status?.replicas ??
+        0
+    );
+    return {
+      name: d.metadata?.name || '',
+      namespace: d.metadata?.namespace || 'default',
+      ready: `${ready}/${desired}`,
+      up_to_date: Number(d.status?.updatedReplicas || 0),
+      available: Number(d.status?.availableReplicas || 0),
+      age: ageFromTimestamp(d.metadata?.creationTimestamp),
+    };
+  });
+
+  const services = items(svcJson).map((s) => {
+    const ports = (
+      (s.spec?.ports as Array<{
+        port?: number;
+        protocol?: string;
+        nodePort?: number;
+      }>) || []
+    )
+      .map((p) => {
+        const base = `${p.port || '?'}/${p.protocol || 'TCP'}`;
+        return p.nodePort ? `${base}:${p.nodePort}` : base;
+      })
+      .join(', ');
+    const external = s.status?.loadBalancer as
+      | { ingress?: Array<{ ip?: string; hostname?: string }> }
+      | undefined;
+    const extParts = (external?.ingress || [])
+      .map((i) => i.ip || i.hostname)
+      .filter(Boolean);
+    const externalIPs = (s.spec?.externalIPs as string[] | undefined) || [];
+    return {
+      name: s.metadata?.name || '',
+      namespace: s.metadata?.namespace || 'default',
+      type: String(s.spec?.type || 'ClusterIP'),
+      cluster_ip: (s.spec?.clusterIP as string) || null,
+      external_ip:
+        [...extParts, ...externalIPs].filter(Boolean).join(', ') || null,
+      ports: ports || null,
+      age: ageFromTimestamp(s.metadata?.creationTimestamp),
+    };
+  });
+
+  const ingresses = items(ingJson).map((ing) => {
+    const rules =
+      ((ing.spec as { rules?: Array<{ host?: string }> })?.rules || [])
+        .map((r) => r.host)
+        .filter(Boolean)
+        .join(', ') || null;
+    const lbs = (
+      (ing.status?.loadBalancer as {
+        ingress?: Array<{ ip?: string; hostname?: string }>;
+      })?.ingress || []
+    )
+      .map((i) => i.ip || i.hostname)
+      .filter(Boolean)
+      .join(', ');
+    const className =
+      (ing.spec as { ingressClassName?: string })?.ingressClassName ||
+      ing.metadata?.labels?.['kubernetes.io/ingress.class'] ||
+      null;
+    return {
+      name: ing.metadata?.name || '',
+      namespace: ing.metadata?.namespace || 'default',
+      class: className,
+      hosts: rules,
+      address: lbs || null,
+      age: ageFromTimestamp(ing.metadata?.creationTimestamp),
+    };
+  });
+
+  const nodes = items(nodesJson).map((n) => {
+    const conditions =
+      (n.status?.conditions as Array<{ type?: string; status?: string }>) || [];
+    const ready = conditions.find((c) => c.type === 'Ready');
+    const status =
+      ready?.status === 'True' ? 'Ready' : ready ? 'NotReady' : 'Unknown';
+    const roles =
+      Object.keys(n.metadata?.labels || {})
+        .filter((k) => k.startsWith('node-role.kubernetes.io/'))
+        .map((k) => k.replace('node-role.kubernetes.io/', '') || 'node')
+        .join(',') || 'worker';
+    const capacity = n.status?.capacity as
+      | { cpu?: string; memory?: string }
+      | undefined;
+    return {
+      name: n.metadata?.name || '',
+      status,
+      roles,
+      version:
+        (n.status?.nodeInfo as { kubeletVersion?: string } | undefined)
+          ?.kubeletVersion || null,
+      age: ageFromTimestamp(n.metadata?.creationTimestamp),
+      cpu: capacity?.cpu || null,
+      memory: capacity?.memory || null,
+    };
+  });
+
+  const namespaces = items(nsProbe).map((ns) => ({
+    name: ns.metadata?.name || '',
+    status: String(
+      (ns.status as { phase?: string } | undefined)?.phase || 'Active'
+    ),
+    age: ageFromTimestamp(ns.metadata?.creationTimestamp),
+  }));
+
+  const pvcs = items(pvcJson).map((pvc) => ({
+    name: pvc.metadata?.name || '',
+    namespace: pvc.metadata?.namespace || 'default',
+    status: String(pvc.status?.phase || 'Unknown'),
+    volume: (pvc.spec?.volumeName as string) || null,
+    capacity:
+      (pvc.status?.capacity as { storage?: string } | undefined)?.storage ||
+      null,
+    storage_class: (pvc.spec?.storageClassName as string) || null,
+    age: ageFromTimestamp(pvc.metadata?.creationTimestamp),
+  }));
+
+  return {
+    available: true,
+    context,
+    pods,
+    deployments,
+    services,
+    ingresses,
+    nodes,
+    namespaces,
+    pvcs,
+  };
+}
+
 async function readServices(): Promise<NonNullable<AgentMetricsPayload['services']>> {
   try {
     const { stdout } = await execFileAsync(
@@ -418,8 +670,9 @@ export async function collectMetrics(
   const load = os.loadavg() as [number, number, number];
   const swapUsed = Math.max(0, mem.swapTotal - mem.swapFree);
 
-  const [docker, services, logs] = await Promise.all([
+  const [docker, kubernetes, services, logs] = await Promise.all([
     collectDocker(),
+    collectKubernetes(),
     readServices(),
     readLogs(),
   ]);
@@ -469,6 +722,7 @@ export async function collectMetrics(
     network: readNetwork(),
     containers: docker.containers,
     docker,
+    kubernetes,
     services,
     logs,
   };
