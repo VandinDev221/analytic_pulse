@@ -16,10 +16,16 @@ import { agentsRouter } from './modules/agents';
 import { dockerRouter } from './modules/docker';
 import { kubernetesRouter } from './modules/kubernetes';
 import { aiRouter } from './modules/ai';
+import {
+  apiKeysRouter,
+  publicApiV1Router,
+  openapiSpec,
+} from './modules/publicapi';
 import { checkDatabase } from './infrastructure/db';
 import { registerTelegramWebhook } from './services/telegramApi';
 import { logger } from './observability/logger';
 import { getMetricsSnapshot, inc } from './observability/metrics';
+import swaggerUi from 'swagger-ui-express';
 
 assertCriticalEnv();
 
@@ -41,7 +47,12 @@ const corsOptions: cors.CorsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-cron-secret'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-cron-secret',
+    'x-api-key',
+  ],
 };
 
 app.use(cors(corsOptions));
@@ -99,6 +110,19 @@ app.use('/api/agents', agentsRouter);
 app.use('/api/docker', dockerRouter);
 app.use('/api/kubernetes', kubernetesRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/api-keys', apiKeysRouter);
+app.use('/api/v1', publicApiV1Router);
+app.get('/api/openapi.json', (_req, res) => {
+  res.json(openapiSpec);
+});
+app.use(
+  '/api/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(openapiSpec as never, {
+    customSiteTitle: 'Analytic Pulse API',
+    swaggerOptions: { persistAuthorization: true },
+  })
+);
 app.use('/api/cron', cronRouter);
 app.use('/api/status', statusRouter);
 app.use('/api/telegram', telegramRouter);

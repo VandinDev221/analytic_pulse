@@ -59,6 +59,7 @@ uma plataforma open-source de observabilidade focada em monitoramento de uptime.
 - Token de ingestão; snapshots ~7 dias.
 - Página /docker: containers, CPU/RAM, restarts, volumes, networks e logs.
 - Página /kubernetes: pods, deployments, services, ingress, nodes, namespaces e PVC (via kubectl no agent).
+- Página /api-keys: chaves ap_pk_… para API pública /api/v1; docs em /api/docs (OpenAPI/Swagger).
 
 ### Mapa
 - Página /map: visão mundial de monitores por região com status/latência.
@@ -70,7 +71,8 @@ uma plataforma open-source de observabilidade focada em monitoramento de uptime.
 ## O que ainda NÃO existe (não invente)
 - Análise automática de root cause por IA além deste chat de ajuda.
 - Predição de falhas, correlação avançada de incidentes via IA.
-- API pública documentada / SDKs / CLI (roadmap futuro).
+- SDKs oficiais / CLI (roadmap futuro).
+- GraphQL (REST /api/v1 primeiro).
 
 ## Limitações honestas
 - Em hosting gratuito a API pode "dormir" e o primeiro request demorar.

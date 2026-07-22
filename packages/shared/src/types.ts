@@ -1156,3 +1156,32 @@ export interface KubernetesOverview {
   namespaces: Array<K8sNamespaceInfo & { agent_id: string; agent_name: string }>;
   pvcs: Array<K8sPvcInfo & { agent_id: string; agent_name: string }>;
 }
+
+// ── Public API (Fase 13) ──────────────────────────────────────
+
+export type ApiKeyScope = 'read' | 'write';
+
+export interface ApiKey {
+  id: string;
+  user_id: string;
+  name: string;
+  token_prefix: string;
+  scopes: ApiKeyScope[];
+  last_used_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+}
+
+export interface ApiKeyCreated extends ApiKey {
+  /** Token em claro — retornado apenas na criação */
+  token: string;
+}
+
+export interface CreateApiKeyInput {
+  name: string;
+  scopes?: ApiKeyScope[];
+}
+
+export interface ApiKeysOverview {
+  keys: ApiKey[];
+}

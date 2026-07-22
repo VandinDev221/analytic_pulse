@@ -13,6 +13,7 @@ Repositório: [github.com/VandinDev221/analytic_pulse](https://github.com/Vandin
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Monorepo, Clean Architecture, Services + Repositories |
 | [docs/UI_GUIDELINES.md](docs/UI_GUIDELINES.md) | Design System, UX e anti-padrões |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Como contribuir sem dívida técnica |
+| [docs/API.md](docs/API.md) | API pública REST `/api/v1` + OpenAPI |
 
 > Implementar o roadmap em fatias. Evite big-bang de várias fases no mesmo PR.
 
@@ -72,6 +73,8 @@ O Render permite **apenas 1 Postgres gratuito** por workspace. Escolha uma opç�
    Para a Fase 10 (Linux Agent), execute [`database/migration_agents_v1.sql`](database/migration_agents_v1.sql).
    A Fase 11 (Docker) não exige migration — agrega snapshots dos agents.
    A Fase 12 (Kubernetes) idem — agrega `kubectl` via agents (`/kubernetes`).
+   Para a Fase 13 (API pública), execute [`database/migration_public_api_v1.sql`](database/migration_public_api_v1.sql).
+   Docs da API: [`docs/API.md`](docs/API.md) · Swagger: `/api/docs`.
 
 ### Linux Agent
 

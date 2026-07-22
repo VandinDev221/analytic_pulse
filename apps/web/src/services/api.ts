@@ -225,6 +225,43 @@ export async function getKubernetesOverview(): Promise<
   return res.json();
 }
 
+export function getApiDocsUrl(): string {
+  return `${API}/docs`;
+}
+
+export async function getApiKeys(): Promise<import('../types').ApiKeysOverview> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/api-keys`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch API keys');
+  return res.json();
+}
+
+export async function createApiKey(
+  name: string,
+  scopes?: Array<'read' | 'write'>
+): Promise<import('../types').ApiKeyCreated> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/api-keys`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ name, scopes }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to create API key');
+  }
+  return res.json();
+}
+
+export async function deleteApiKey(id: string): Promise<void> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/api-keys/${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) throw new Error('Failed to revoke API key');
+}
+
 export async function getMonitor(id: string): Promise<Monitor> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/monitors/${id}`, { headers });

@@ -92,6 +92,11 @@ export type {
   K8sNodeInfo,
   K8sNamespaceInfo,
   K8sPvcInfo,
+  ApiKey,
+  ApiKeyCreated,
+  ApiKeysOverview,
+  CreateApiKeyInput,
+  ApiKeyScope,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';

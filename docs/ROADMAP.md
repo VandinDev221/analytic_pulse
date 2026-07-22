@@ -14,7 +14,7 @@ Legenda: `⬜` planejado · `🔄` em andamento · `✅` concluído
 `✅` Service + Repository Pattern no backend (módulo `monitoring` como piloto)  
 `✅` Observabilidade interna (logs estruturados, `/health`, `/metrics`)
 
-Próximo: **Fase 13 — API pública**.
+Próximo: **Fase 14 — SDKs**.
 
 ---
 
@@ -169,7 +169,13 @@ Sem migration — dados vêm de `agents.latest_metrics.kubernetes`.
 
 ## Fase 13 — API pública
 
-REST primeiro; arquitetura preparada para GraphQL. OpenAPI / Swagger. Documentação automática. Toda funcionalidade exposta via API.
+`✅` Chaves `ap_pk_…` (`api_keys`) + CRUD JWT em `/api/api-keys`  
+`✅` REST versionada `/api/v1` (monitors, incidents, overviews, agents, docker, k8s)  
+`✅` OpenAPI 3 + Swagger UI em `/api/docs` (`/api/openapi.json`)  
+`✅` Página `/api-keys` no dashboard  
+
+Migration: [`database/migration_public_api_v1.sql`](../database/migration_public_api_v1.sql)  
+Docs: [`docs/API.md`](API.md)
 
 ---
 
