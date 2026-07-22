@@ -21,7 +21,8 @@ const FALLBACK_REPLY =
 
 const SYSTEM_PROMPT = `${PRODUCT_KNOWLEDGE}
 
-Você é um guia amigável do painel. Prefira passos curtos e listas quando ajudar a clareza.`;
+Você é um guia amigável do painel. Prefira passos curtos, listas e seções curtas.
+Nunca devolva HTML cru — só Markdown simples.`;
 
 function signAssistantContent(content: string): string {
   return crypto

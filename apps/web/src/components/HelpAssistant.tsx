@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MessageCircle, Send, X, Sparkles, Loader2 } from 'lucide-react';
 import { chatWithAssistant, type AssistantChatMessage } from '../services/api';
+import { ChatMarkdown } from './ChatMarkdown';
 
 const SUGGESTIONS = [
   'Como criar um monitor?',
@@ -126,7 +127,11 @@ export const HelpAssistant: React.FC = () => {
                 key={`${m.role}-${i}`}
                 className={`help-assistant__bubble help-assistant__bubble--${m.role}`}
               >
-                {m.content}
+                {m.role === 'assistant' ? (
+                  <ChatMarkdown content={m.content} />
+                ) : (
+                  <span className="help-assistant__plain">{m.content}</span>
+                )}
               </div>
             ))}
 
