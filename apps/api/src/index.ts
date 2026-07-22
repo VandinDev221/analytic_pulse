@@ -57,7 +57,9 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
-app.use(express.json());
+// Limite explícito evita payloads enormes (padrão do Express é 100kb; fixamos aqui).
+app.use(express.json({ limit: '100kb' }));
+
 
 app.use((req, _res, next) => {
   inc('http_requests_total');

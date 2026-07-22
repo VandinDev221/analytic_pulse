@@ -4,12 +4,21 @@ import {
   requireAuth,
   type AuthenticatedRequest,
 } from '../../../middleware/auth';
+import { createRateLimiter } from '../../../middleware/rateLimit';
 import { AssistantService } from '../services/AssistantService';
 
 const router = Router();
 const service = new AssistantService();
 
 router.use(requireAuth as never);
+
+/** Protege custo Groq: 20 req/min por usuário autenticado. */
+const aiChatRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 20,
+  keyFn: (req) => `ai:chat:${req.userId ?? 'anon'}`,
+  message: 'Limite de mensagens do assistente atingido. Aguarde um minuto.',
+});
 
 function handleError(res: Response, error: unknown) {
   if (isAppError(error)) {
@@ -23,7 +32,7 @@ function handleError(res: Response, error: unknown) {
   return res.status(500).json({ error: message });
 }
 
-router.post('/chat', async (req: AuthenticatedRequest, res) => {
+router.post('/chat', aiChatRateLimit as never, async (req: AuthenticatedRequest, res) => {
   try {
     const message = await service.chat(req.body?.messages);
     return res.json({ message });
