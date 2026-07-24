@@ -1,5 +1,7 @@
 import type {
   AffectedMonitor,
+  AiAnalysisStatus,
+  IncidentAiAnalysis,
   IncidentComment,
   IncidentTimelineEvent,
   IncidentTimelineEventType,
@@ -185,6 +187,50 @@ export class PgIncidentRepository implements IncidentRepository {
     );
 
     return (result.rows[0] as IncidentRow | undefined) ?? null;
+  }
+
+  async claimAiAnalysis(
+    id: string,
+    userId: string,
+    opts?: { force?: boolean }
+  ): Promise<boolean> {
+    const force = opts?.force === true;
+    const result = await query(
+      force
+        ? `UPDATE incidents
+           SET ai_analysis_status = 'pending',
+               updated_at = TIMEZONE('utc', NOW())
+           WHERE id = $1 AND user_id = $2
+           RETURNING id`
+        : `UPDATE incidents
+           SET ai_analysis_status = 'pending',
+               updated_at = TIMEZONE('utc', NOW())
+           WHERE id = $1 AND user_id = $2
+             AND (
+               ai_analysis_status IS NULL
+               OR ai_analysis_status IN ('failed', 'skipped')
+             )
+           RETURNING id`,
+      [id, userId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async saveAiAnalysis(
+    id: string,
+    userId: string,
+    analysis: IncidentAiAnalysis,
+    status: Extract<AiAnalysisStatus, 'ready' | 'failed' | 'skipped'>
+  ): Promise<void> {
+    await query(
+      `UPDATE incidents
+       SET ai_analysis = $3::jsonb,
+           ai_analysis_status = $4,
+           ai_analyzed_at = TIMEZONE('utc', NOW()),
+           updated_at = TIMEZONE('utc', NOW())
+       WHERE id = $1 AND user_id = $2`,
+      [id, userId, JSON.stringify(analysis), status]
+    );
   }
 
   async attachMonitor(incidentId: string, monitorId: string): Promise<void> {

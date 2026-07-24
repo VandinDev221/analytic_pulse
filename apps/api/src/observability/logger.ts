@@ -1,3 +1,5 @@
+import { activeTraceFields } from './tracing';
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 type LogFields = Record<string, unknown>;
@@ -28,6 +30,7 @@ function write(level: LogLevel, message: string, fields?: LogFields): void {
     msg: message,
     time: new Date().toISOString(),
     service: 'analytic-pulse-api',
+    ...activeTraceFields(),
     ...fields,
   };
 

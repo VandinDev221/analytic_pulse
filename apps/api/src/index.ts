@@ -1,3 +1,6 @@
+import { startOtel, getOtelStatus } from './observability/otel';
+startOtel();
+
 import express from 'express';
 import cors from 'cors';
 import { assertCriticalEnv, env, getAllowedOrigins } from './config/env';
@@ -17,6 +20,7 @@ import { dockerRouter } from './modules/docker';
 import { kubernetesRouter } from './modules/kubernetes';
 import { aiRouter } from './modules/ai';
 import { eventsRouter } from './modules/realtime';
+import { rumRouter } from './modules/rum';
 import {
   apiKeysRouter,
   publicApiV1Router,
@@ -53,11 +57,25 @@ const corsOptions: cors.CorsOptions = {
     'Authorization',
     'x-cron-secret',
     'x-api-key',
+    'x-rum-token',
   ],
 };
 
-app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
+// RUM ingest: CORS permissivo (token-gated); demais rotas usam allowlist
+app.use((req, res, next) => {
+  if (req.path === '/api/rum/ingest' || req.originalUrl.startsWith('/api/rum/ingest')) {
+    next();
+    return;
+  }
+  cors(corsOptions)(req, res, next);
+});
+app.options(/.*/, (req, res, next) => {
+  if (req.path === '/api/rum/ingest' || req.originalUrl.startsWith('/api/rum/ingest')) {
+    next();
+    return;
+  }
+  cors(corsOptions)(req, res, next);
+});
 // Limite explícito evita payloads enormes (padrão do Express é 100kb; fixamos aqui).
 app.use(express.json({ limit: '100kb' }));
 
@@ -96,7 +114,10 @@ app.get('/health/db', async (_req, res) => {
 });
 
 app.get('/metrics', (_req, res) => {
-  res.json(getMetricsSnapshot());
+  res.json({
+    ...getMetricsSnapshot(),
+    otel: getOtelStatus(),
+  });
 });
 
 app.use('/api/auth', authRouter);
@@ -114,6 +135,7 @@ app.use('/api/docker', dockerRouter);
 app.use('/api/kubernetes', kubernetesRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/events', eventsRouter);
+app.use('/api/rum', rumRouter);
 app.use('/api/api-keys', apiKeysRouter);
 app.use('/api/v1', publicApiV1Router);
 app.get('/api/openapi.json', (_req, res) => {

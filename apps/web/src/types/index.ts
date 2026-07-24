@@ -101,6 +101,13 @@ export type {
   AiStatus,
   AiExplainedItem,
   AiSuggestedAction,
+  RumSite,
+  RumSiteCreated,
+  RumOverview,
+  RumEvent,
+  RumVitalStat,
+  CreateRumSiteInput,
+  AiAnalysisStatus,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';

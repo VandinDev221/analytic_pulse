@@ -1,0 +1,37 @@
+{
+  "name": "@analytic-pulse/rum",
+  "version": "0.1.0",
+  "description": "SDK RUM (Real User Monitoring) para sites — Web Vitals, page views e erros",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "files": ["dist", "src", "README.md"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VandinDev221/analytic_pulse.git",
+    "directory": "packages/rum"
+  },
+  "keywords": ["analytic-pulse", "rum", "web-vitals", "monitoring"],
+  "dependencies": {
+    "web-vitals": "^4.2.4"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

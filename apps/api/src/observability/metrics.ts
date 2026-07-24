@@ -1,7 +1,10 @@
 /**
  * Contadores em memória — baseline de métricas internas.
- * Preparado para trocar por Prometheus/OTel sem mudar callers.
+ * Quando OTel está ativo, espelha contadores no Meter API (OTLP).
  */
+
+import { metrics, type Counter, type Histogram } from '@opentelemetry/api';
+import { isOtelEnabled } from './otel';
 
 type CounterMap = Record<string, number>;
 
@@ -18,12 +21,47 @@ const counters: CounterMap = {
 let lastPingCycleMs = 0;
 let startedAt = Date.now();
 
+const otelCounterCache = new Map<string, Counter>();
+let pingCycleHistogram: Histogram | null = null;
+
+function otelInc(name: string, by: number): void {
+  if (!isOtelEnabled()) return;
+  try {
+    let counter = otelCounterCache.get(name);
+    if (!counter) {
+      const meter = metrics.getMeter('analytic-pulse');
+      counter = meter.createCounter(`pulse.${name}`, {
+        description: `Analytic Pulse counter: ${name}`,
+      });
+      otelCounterCache.set(name, counter);
+    }
+    counter.add(by);
+  } catch {
+    // SDK ainda não pronto / métricas desabilitadas
+  }
+}
+
 export function inc(name: keyof typeof counters | string, by = 1): void {
   counters[name] = (counters[name] ?? 0) + by;
+  otelInc(String(name), by);
 }
 
 export function setLastPingCycleDuration(ms: number): void {
   lastPingCycleMs = ms;
+  if (!isOtelEnabled()) return;
+  try {
+    if (!pingCycleHistogram) {
+      pingCycleHistogram = metrics
+        .getMeter('analytic-pulse')
+        .createHistogram('pulse.ping_cycle_duration_ms', {
+          description: 'Duração do ciclo de ping (ms)',
+          unit: 'ms',
+        });
+    }
+    pingCycleHistogram.record(ms);
+  } catch {
+    // ignore
+  }
 }
 
 export function recordPingResult(isUp: boolean): void {
@@ -46,4 +84,6 @@ export function resetMetricsForTests(): void {
   }
   lastPingCycleMs = 0;
   startedAt = Date.now();
+  otelCounterCache.clear();
+  pingCycleHistogram = null;
 }

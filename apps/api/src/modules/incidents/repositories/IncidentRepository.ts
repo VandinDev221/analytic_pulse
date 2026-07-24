@@ -1,6 +1,8 @@
 import type {
   AffectedMonitor,
+  AiAnalysisStatus,
   Incident,
+  IncidentAiAnalysis,
   IncidentComment,
   IncidentSeverity,
   IncidentStatus,
@@ -26,6 +28,9 @@ export interface IncidentRow {
   resolved_by: string | null;
   created_at: Date | string;
   updated_at: Date | string;
+  ai_analysis?: IncidentAiAnalysis | Record<string, unknown> | null;
+  ai_analysis_status?: AiAnalysisStatus | null;
+  ai_analyzed_at?: Date | string | null;
 }
 
 export interface IncidentRepository {
@@ -57,6 +62,20 @@ export interface IncidentRepository {
       resolved_by?: string | null;
     }
   ): Promise<IncidentRow | null>;
+
+  /** Marca pending de forma atômica; retorna false se já pending/ready (auto). */
+  claimAiAnalysis(
+    id: string,
+    userId: string,
+    opts?: { force?: boolean }
+  ): Promise<boolean>;
+
+  saveAiAnalysis(
+    id: string,
+    userId: string,
+    analysis: IncidentAiAnalysis,
+    status: Extract<AiAnalysisStatus, 'ready' | 'failed' | 'skipped'>
+  ): Promise<void>;
 
   attachMonitor(incidentId: string, monitorId: string): Promise<void>;
 
@@ -101,6 +120,13 @@ export function computeDurationMs(row: IncidentRow, now = Date.now()): number {
   return Math.max(0, end - opened);
 }
 
+function mapAiAnalysis(
+  raw: IncidentRow['ai_analysis']
+): IncidentAiAnalysis | null {
+  if (!raw || typeof raw !== 'object') return null;
+  return raw as IncidentAiAnalysis;
+}
+
 export function mapIncident(
   row: IncidentRow,
   affected: AffectedMonitor[]
@@ -124,5 +150,8 @@ export function mapIncident(
     updated_at: toIso(row.updated_at)!,
     duration_ms: computeDurationMs(row),
     affected_monitors: affected,
+    ai_analysis: mapAiAnalysis(row.ai_analysis),
+    ai_analysis_status: row.ai_analysis_status ?? null,
+    ai_analyzed_at: toIso(row.ai_analyzed_at),
   };
 }

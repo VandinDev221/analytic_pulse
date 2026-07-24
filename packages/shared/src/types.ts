@@ -327,6 +327,8 @@ export type IncidentTimelineEventType =
   | 'note_updated'
   | 'severity_changed'
   | 'root_cause_updated'
+  | 'ai_analysis_ready'
+  | 'ai_analysis_failed'
   | 'system';
 
 export interface AffectedMonitor {
@@ -336,6 +338,12 @@ export interface AffectedMonitor {
   status: MonitorStatus;
   check_type?: CheckType;
 }
+
+export type AiAnalysisStatus =
+  | 'pending'
+  | 'ready'
+  | 'failed'
+  | 'skipped';
 
 export interface Incident {
   id: string;
@@ -357,6 +365,10 @@ export interface Incident {
   /** Duração em ms (até recovered_at ou now se aberto) */
   duration_ms: number;
   affected_monitors: AffectedMonitor[];
+  /** Sugestão de IA (read-only) — nunca é autoridade */
+  ai_analysis?: IncidentAiAnalysis | null;
+  ai_analysis_status?: AiAnalysisStatus | null;
+  ai_analyzed_at?: string | null;
 }
 
 export interface IncidentTimelineEvent {
@@ -1250,9 +1262,94 @@ export interface IncidentAiAnalysis {
   generated_at: string;
   model: string;
   disclaimer: string;
+  /** Como a análise foi disparada */
+  trigger?: 'auto' | 'manual';
 }
 
 export interface AiStatus {
   enabled: boolean;
   model: string | null;
+  /** RCA automática ao abrir incidente */
+  auto_rca?: boolean;
+}
+
+// ── RUM (Real User Monitoring) ────────────────────────────────
+
+export type RumEventType = 'page_view' | 'web_vital' | 'error' | 'custom';
+
+export interface RumSite {
+  id: string;
+  user_id: string;
+  name: string;
+  origin_allow: string | null;
+  token_prefix: string;
+  last_seen_at: string | null;
+  created_at: string;
+  updated_at: string;
+  events_24h?: number;
+}
+
+export interface RumSiteCreated extends RumSite {
+  /** Token em claro — retornado apenas na criação */
+  token: string;
+}
+
+export interface CreateRumSiteInput {
+  name: string;
+  /** Origem permitida opcional (ex.: https://app.exemplo.com). Vazio = qualquer. */
+  origin_allow?: string | null;
+}
+
+export interface RumEventInput {
+  type: RumEventType;
+  name?: string;
+  value?: number | null;
+  url?: string;
+  path?: string;
+  referrer?: string;
+  session_id?: string;
+  meta?: Record<string, unknown>;
+  /** Timestamp do cliente (ISO); servidor usa now() se ausente */
+  ts?: string;
+}
+
+export interface RumIngestPayload {
+  events: RumEventInput[];
+}
+
+export interface RumEvent {
+  id: string;
+  site_id: string;
+  user_id: string;
+  event_type: RumEventType;
+  name: string | null;
+  value: number | null;
+  url: string | null;
+  path: string | null;
+  referrer: string | null;
+  user_agent: string | null;
+  session_id: string | null;
+  meta: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface RumVitalStat {
+  name: string;
+  count: number;
+  p50: number | null;
+  p75: number | null;
+  p95: number | null;
+  avg: number | null;
+}
+
+export interface RumOverview {
+  sites: RumSite[];
+  summary: {
+    sites: number;
+    page_views_24h: number;
+    errors_24h: number;
+    sessions_24h: number;
+  };
+  vitals: RumVitalStat[];
+  recent_errors: RumEvent[];
 }

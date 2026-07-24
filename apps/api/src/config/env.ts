@@ -48,6 +48,11 @@ export const env = {
   playwrightTimeoutMs: Number(read('PLAYWRIGHT_TIMEOUT_MS', '30000') || '30000'),
   /** Região atribuída aos checks executados pela API (quando não há probe remoto) */
   defaultProbeRegion: read('DEFAULT_PROBE_REGION', 'gru') || 'gru',
+  /** OpenTelemetry OTLP (opcional). Sem endpoint o SDK fica desligado. */
+  otelExporterOtlpEndpoint: read('OTEL_EXPORTER_OTLP_ENDPOINT'),
+  otelServiceName: read('OTEL_SERVICE_NAME', 'analytic-pulse-api') || 'analytic-pulse-api',
+  /** RCA automática ao abrir incidente (requer GROQ_API_KEY). Desligue com AI_RCA_AUTO=false */
+  aiRcaAutoEnabled: (read('AI_RCA_AUTO', 'true') || 'true').toLowerCase() !== 'false',
 } as const;
 
 export function assertCriticalEnv(): void {

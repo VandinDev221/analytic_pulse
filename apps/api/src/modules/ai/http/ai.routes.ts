@@ -73,7 +73,10 @@ router.post(
   aiAnalyzeRateLimit as never,
   async (req: AuthenticatedRequest, res) => {
     try {
-      const analysis = await analyzer.analyze(req.userId!, paramId(req));
+      const analysis = await analyzer.analyze(req.userId!, paramId(req), {
+        trigger: 'manual',
+        force: true,
+      });
       return res.json(analysis);
     } catch (error) {
       return handleError(res, error);

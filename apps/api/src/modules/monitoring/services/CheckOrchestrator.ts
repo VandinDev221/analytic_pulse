@@ -17,6 +17,8 @@ import type { MonitorRepository } from '../repositories/MonitorRepository';
 import { realtimeHub } from '../../realtime';
 import { env } from '../../../config/env';
 import { query } from '../../../infrastructure/db';
+import { withSpan } from '../../../observability/tracing';
+import { SpanStatusCode } from '@opentelemetry/api';
 
 export interface PingCycleResult {
   processed: number;
@@ -90,94 +92,134 @@ export class CheckOrchestrator {
   }
 
   async runPingCycle(): Promise<PingCycleResult> {
-    const startTime = Date.now();
-    const log = logger.child({ component: 'CheckOrchestrator' });
-    log.info('Ping cycle started');
+    return withSpan('monitoring.ping_cycle', async (span) => {
+      const startTime = Date.now();
+      const log = logger.child({ component: 'CheckOrchestrator' });
+      log.info('Ping cycle started');
 
-    const allMonitors = await this.monitors.findDueForCheck();
-    const probeRegions = await onlineProbeRegionsByUser();
+      const allMonitors = await this.monitors.findDueForCheck();
+      const probeRegions = await onlineProbeRegionsByUser();
 
-    // Monitores com probe online na região ficam para o agent remoto
-    const monitors = allMonitors.filter((m) => {
-      const region = m.region_code || 'gru';
-      const covered = probeRegions.get(m.user_id)?.has(region);
-      return !covered;
-    });
+      // Monitores com probe online na região ficam para o agent remoto
+      const monitors = allMonitors.filter((m) => {
+        const region = m.region_code || 'gru';
+        const covered = probeRegions.get(m.user_id)?.has(region);
+        return !covered;
+      });
 
-    if (monitors.length === 0) {
+      span.setAttribute('monitors.due', allMonitors.length);
+      span.setAttribute('monitors.local', monitors.length);
+      span.setAttribute(
+        'monitors.deferred_to_probes',
+        allMonitors.length - monitors.length
+      );
+
+      if (monitors.length === 0) {
+        const flush = await this.alertDispatcher.processDue();
+        return {
+          processed: 0,
+          success: 0,
+          failed: 0,
+          elapsed_ms: 0,
+          alerts_sent: flush.sent,
+        };
+      }
+
+      log.info('Active monitors loaded', {
+        count: monitors.length,
+        deferred_to_probes: allMonitors.length - monitors.length,
+      });
+
+      let alertsEnqueued = 0;
+      const localRegion = env.defaultProbeRegion;
+
+      const tasks = monitors.map((monitor) => async () => {
+        return withSpan(
+          'monitoring.check',
+          async (checkSpan) => {
+            checkSpan.setAttribute('monitor.id', monitor.id);
+            checkSpan.setAttribute('monitor.name', monitor.name);
+            checkSpan.setAttribute('monitor.check_type', monitor.check_type);
+            checkSpan.setAttribute('monitor.url', monitor.url);
+            checkSpan.setAttribute('probe.region', localRegion);
+            checkSpan.setAttribute('probe.source', 'api');
+
+            const result = await runCheck(monitor);
+            const withProbe: CheckResult = {
+              ...result,
+              meta: {
+                ...(result.meta ?? {}),
+                probe_region: localRegion,
+                probe_source: 'api',
+              },
+            };
+
+            checkSpan.setAttribute('check.is_up', withProbe.is_up);
+            if (withProbe.response_time_ms != null) {
+              checkSpan.setAttribute('check.response_time_ms', withProbe.response_time_ms);
+            }
+            if (withProbe.status_code != null) {
+              checkSpan.setAttribute('check.status_code', withProbe.status_code);
+            }
+            if (!withProbe.is_up) {
+              checkSpan.setStatus({
+                code: SpanStatusCode.ERROR,
+                message: withProbe.error_message || 'check down',
+              });
+            }
+
+            const enqueued = await this.persistCheck(monitor, withProbe, localRegion);
+            alertsEnqueued += enqueued;
+            return { monitorId: monitor.id, name: monitor.name, ...withProbe };
+          }
+        );
+      });
+
+      const results = await runInBatches(tasks, 5);
+      const success = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.filter((r) => r.status === 'rejected').length;
+
       const flush = await this.alertDispatcher.processDue();
-      return {
-        processed: 0,
-        success: 0,
-        failed: 0,
-        elapsed_ms: 0,
-        alerts_sent: flush.sent,
-      };
-    }
+      const elapsed_ms = Date.now() - startTime;
 
-    log.info('Active monitors loaded', {
-      count: monitors.length,
-      deferred_to_probes: allMonitors.length - monitors.length,
-    });
+      inc('ping_cycles_total');
+      if (failed > 0) inc('ping_cycle_failures_total', failed);
+      setLastPingCycleDuration(elapsed_ms);
 
-    let alertsEnqueued = 0;
-    const localRegion = env.defaultProbeRegion;
+      span.setAttribute('cycle.success', success);
+      span.setAttribute('cycle.failed', failed);
+      span.setAttribute('cycle.elapsed_ms', elapsed_ms);
 
-    const tasks = monitors.map((monitor) => async () => {
-      const result = await runCheck(monitor);
-      const withProbe: CheckResult = {
-        ...result,
-        meta: {
-          ...(result.meta ?? {}),
-          probe_region: localRegion,
-          probe_source: 'api',
+      const userIds = new Set(monitors.map((m) => m.user_id).filter(Boolean));
+      realtimeHub.publishMany(userIds, {
+        type: 'ping.cycle',
+        payload: {
+          processed: monitors.length,
+          success,
+          failed,
+          elapsed_ms,
+          alerts_sent: flush.sent,
         },
-      };
-      const enqueued = await this.persistCheck(monitor, withProbe, localRegion);
-      alertsEnqueued += enqueued;
-      return { monitorId: monitor.id, name: monitor.name, ...withProbe };
-    });
+      });
 
-    const results = await runInBatches(tasks, 5);
-    const success = results.filter((r) => r.status === 'fulfilled').length;
-    const failed = results.filter((r) => r.status === 'rejected').length;
-
-    const flush = await this.alertDispatcher.processDue();
-    const elapsed_ms = Date.now() - startTime;
-
-    inc('ping_cycles_total');
-    if (failed > 0) inc('ping_cycle_failures_total', failed);
-    setLastPingCycleDuration(elapsed_ms);
-
-    const userIds = new Set(monitors.map((m) => m.user_id).filter(Boolean));
-    realtimeHub.publishMany(userIds, {
-      type: 'ping.cycle',
-      payload: {
+      log.info('Ping cycle completed', {
         processed: monitors.length,
         success,
         failed,
         elapsed_ms,
+        alerts_enqueued: alertsEnqueued,
         alerts_sent: flush.sent,
-      },
-    });
+      });
 
-    log.info('Ping cycle completed', {
-      processed: monitors.length,
-      success,
-      failed,
-      elapsed_ms,
-      alerts_enqueued: alertsEnqueued,
-      alerts_sent: flush.sent,
+      return {
+        processed: monitors.length,
+        success,
+        failed,
+        elapsed_ms,
+        alerts_enqueued: alertsEnqueued,
+        alerts_sent: flush.sent,
+      };
     });
-
-    return {
-      processed: monitors.length,
-      success,
-      failed,
-      elapsed_ms,
-      alerts_enqueued: alertsEnqueued,
-      alerts_sent: flush.sent,
-    };
   }
 
   /**

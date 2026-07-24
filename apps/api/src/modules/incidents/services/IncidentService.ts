@@ -183,6 +183,39 @@ export class IncidentService {
     return this.getDetail(id, userId);
   }
 
+  async claimAiAnalysis(
+    id: string,
+    userId: string,
+    opts?: { force?: boolean }
+  ): Promise<boolean> {
+    return this.incidents.claimAiAnalysis(id, userId, opts);
+  }
+
+  async saveAiAnalysis(
+    id: string,
+    userId: string,
+    analysis: import('@analytic-pulse/shared').IncidentAiAnalysis,
+    status: 'ready' | 'failed' | 'skipped'
+  ): Promise<void> {
+    await this.incidents.saveAiAnalysis(id, userId, analysis, status);
+  }
+
+  async addSystemTimeline(
+    incidentId: string,
+    input: {
+      eventType: import('@analytic-pulse/shared').IncidentTimelineEventType;
+      message: string;
+      metadata?: Record<string, unknown>;
+    }
+  ): Promise<void> {
+    await this.incidents.addTimelineEvent({
+      incidentId,
+      eventType: input.eventType,
+      message: input.message,
+      metadata: input.metadata,
+    });
+  }
+
   /**
    * Abre incidente quando monitor cai; recupera quando sobe.
    * Chamado pelo CheckOrchestrator (sem HTTP).
@@ -278,6 +311,15 @@ export class IncidentService {
         metadata: { monitor_id: input.monitorId },
       });
     }
+
+    // Análise de causa raiz automática (assistente — não altera o incidente)
+    void import('../../ai/services/AutoRcaQueue')
+      .then(({ enqueueAutoRca }) =>
+        enqueueAutoRca(input.userId, incident.id)
+      )
+      .catch(() => {
+        /* ignore */
+      });
   }
 
   private async recoverIncident(input: {

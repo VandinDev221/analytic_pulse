@@ -6,6 +6,7 @@ import {
   Box,
   Cpu,
   ExternalLink,
+  Eye,
   Globe,
   KeyRound,
   Lock,
@@ -31,12 +32,14 @@ const SECTIONS = [
   { id: 'docker-k8s', label: 'Docker & Kubernetes' },
   { id: 'ssl-dns', label: 'SSL & DNS' },
   { id: 'analytics-mapa', label: 'Analytics & Mapa' },
+  { id: 'rum', label: 'RUM' },
   { id: 'status-page', label: 'Status Page' },
   { id: 'api', label: 'API pública' },
   { id: 'cli-sdks', label: 'CLI & SDKs' },
   { id: 'ia', label: 'Assistente & IA' },
-    { id: 'atualizacao', label: 'Tempo real' },
-  ] as const;
+  { id: 'atualizacao', label: 'Tempo real' },
+  { id: 'otel', label: 'OpenTelemetry' },
+] as const;
 
 export const DocsPage: React.FC = () => {
   const [active, setActive] = useState<string>('visao');
@@ -172,6 +175,7 @@ export const DocsPage: React.FC = () => {
             <div className="docs-grid">
               <DocCard to="/" icon={<Activity size={16} />} title="Dashboard" text="Visão operacional, KPIs e monitores." />
               <DocCard to="/analytics" icon={<Radio size={16} />} title="Analytics" text="Latência P50/P95/P99, uptime, MTTR/MTBF." />
+              <DocCard to="/rum" icon={<Eye size={16} />} title="RUM" text="Web Vitals, page views e erros do browser real." />
               <DocCard to="/ssl" icon={<Lock size={16} />} title="SSL" text="Validade, issuer, cipher e renovação." />
               <DocCard to="/dns" icon={<Server size={16} />} title="DNS" text="Registros e scan de domínio." />
               <DocCard to="/agents" icon={<Cpu size={16} />} title="Agents" text="Métricas do host Linux." />
@@ -339,6 +343,26 @@ npm start`}</pre>
             </p>
           </section>
 
+          <section id="rum" className="docs-section glass dash-panel">
+            <div className="dash-panel__head">
+              <h2>RUM (Real User Monitoring)</h2>
+              <p>Experiência real no browser dos usuários</p>
+            </div>
+            <p>
+              Em <Link to="/rum">RUM</Link> você cria um site e recebe um token{' '}
+              <code>ap_rum_…</code>. No frontend do cliente, instale{' '}
+              <code>@analytic-pulse/rum</code> e chame <code>init()</code>.
+            </p>
+            <ul className="docs-list">
+              <li>Page views, Web Vitals (LCP, INP, CLS, FCP, TTFB) e erros de JS</li>
+              <li>
+                Ingest: <code>POST /api/rum/ingest</code> (CORS liberado; autenticação pelo token)
+              </li>
+              <li>Origem opcional por site (allowlist)</li>
+              <li>Migration: <code>database/migration_rum_v1.sql</code></li>
+            </ul>
+          </section>
+
           <section id="status-page" className="docs-section glass dash-panel">
             <div className="dash-panel__head">
               <h2>Status Page</h2>
@@ -409,8 +433,10 @@ pulse ssl`}</pre>
             </p>
             <p>
               A análise de incidentes (quando <code>GROQ_API_KEY</code> está configurada na API)
-              sugere causas e ações com explicação e disclaimer. A IA <strong>não</strong> altera
-              monitores, regras ou dados — o sistema funciona 100% sem ela.
+              sugere causas e ações com explicação e disclaimer. Novos incidentes disparam{' '}
+              <strong>RCA automática</strong> (desligue com <code>AI_RCA_AUTO=false</code>). A IA{' '}
+              <strong>não</strong> altera monitores, regras, status nem o campo root cause — o
+              sistema funciona 100% sem ela.
             </p>
           </section>
 
@@ -434,6 +460,33 @@ pulse ssl`}</pre>
                 Fallback: se o stream cair, um polling longo (~5 min) cobre até a reconexão
               </li>
               <li>O botão “Atualizar” continua disponível para refresh imediato</li>
+            </ul>
+          </section>
+
+          <section id="otel" className="docs-section glass dash-panel">
+            <div className="dash-panel__head">
+              <h2>OpenTelemetry</h2>
+              <p>Traces e metrics da API via OTLP</p>
+            </div>
+            <p>
+              Quando <code>OTEL_EXPORTER_OTLP_ENDPOINT</code> está configurado na API, o PingPulse
+              exporta traces (HTTP, Express, Postgres e ciclos de check) e métricas (<code>pulse.*</code>)
+              para qualquer backend OTLP — Collector, Grafana, Jaeger, New Relic, etc.
+            </p>
+            <ul className="docs-list">
+              <li>
+                Spans de negócio: <code>monitoring.ping_cycle</code> e{' '}
+                <code>monitoring.check</code> (monitor, tipo, latência, região)
+              </li>
+              <li>
+                Logs JSON da API passam a incluir <code>trace_id</code> / <code>span_id</code> quando
+                há span ativo
+              </li>
+              <li>
+                Status em <code>GET /metrics</code> → campo <code>otel</code> (ligado/desligado +
+                endpoint sanitizado)
+              </li>
+              <li>Sem a variável de ambiente, o SDK não inicia (sem export)</li>
             </ul>
           </section>
         </div>

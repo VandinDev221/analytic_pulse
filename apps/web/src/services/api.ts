@@ -644,3 +644,44 @@ export async function analyzeIncidentWithAi(
   }
   return res.json();
 }
+
+// ── RUM ───────────────────────────────────────────────────────
+
+export async function getRumOverview(): Promise<import('../types').RumOverview> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/rum/overview`, { headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao carregar RUM');
+  }
+  return res.json();
+}
+
+export async function createRumSite(
+  name: string,
+  origin_allow?: string
+): Promise<import('../types').RumSiteCreated> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/rum/sites`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ name, origin_allow: origin_allow || null }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao criar site RUM');
+  }
+  return res.json();
+}
+
+export async function deleteRumSite(id: string): Promise<void> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/rum/sites/${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao remover site RUM');
+  }
+}

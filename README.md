@@ -124,6 +124,42 @@ npm start
 
 Monitores com `region_code` igual à do probe passam a ser checados por ele. Sem probe online, a API executa e grava `DEFAULT_PROBE_REGION` (padrão `gru`).
 
+### OpenTelemetry
+
+A API exporta traces e metrics via OTLP HTTP quando `OTEL_EXPORTER_OTLP_ENDPOINT` está definido (Grafana Cloud, Jaeger, New Relic, Collector local, etc.).
+
+```bash
+# apps/api/.env
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+OTEL_SERVICE_NAME=analytic-pulse-api
+```
+
+- Spans HTTP/Express/Postgres (auto) + `monitoring.ping_cycle` / `monitoring.check`
+- Contadores `pulse.*` alinhados a `GET /metrics`
+- Logs JSON incluem `trace_id` / `span_id` quando há span ativo
+- Sem endpoint: SDK fica desligado (zero overhead de export)
+
+### Real User Monitoring (RUM)
+
+1. Execute [`database/migration_rum_v1.sql`](database/migration_rum_v1.sql).
+2. No dashboard → **RUM**, crie um site e copie o token `ap_rum_…`.
+3. No frontend do cliente:
+
+```bash
+npm install @analytic-pulse/rum
+```
+
+```ts
+import { init } from '@analytic-pulse/rum';
+
+init({
+  endpoint: 'https://sua-api',
+  token: 'ap_rum_...',
+});
+```
+
+Coleta page views, Web Vitals (LCP/INP/CLS/FCP/TTFB) e erros de browser. Ingest: `POST /api/rum/ingest`.
+
 ### SDKs (API pública)
 
 ```bash

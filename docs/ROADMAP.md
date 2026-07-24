@@ -208,9 +208,11 @@ Nunca misturar IA com regras de negócio.
 `✅` Assistente de ajuda no dashboard (widget) via Groq (`POST /api/ai/chat`)  
 `✅` Análise sob demanda de incidente (`POST /api/ai/analyze-incident/:id`) com causas/ações + explicação  
 `✅` `GET /api/ai/status` + botão no detalhe do incidente  
+`✅` RCA automática ao abrir incidente (fila + `ai_analysis` JSONB; não altera `root_cause`)  
 `⬜` Correlação multi-incidente, predição, detecção contínua de padrões  
 
-Toda sugestão possui **explicação**. O sistema funciona sem `GROQ_API_KEY` (UI esconde a análise).
+Toda sugestão possui **explicação**. O sistema funciona sem `GROQ_API_KEY` (UI esconde a análise).  
+Env: `AI_RCA_AUTO=false` desliga o disparo automático. Migration: [`database/migration_ai_rca_v1.sql`](../database/migration_ai_rca_v1.sql)
 
 ---
 
@@ -245,6 +247,38 @@ Migration (contrato): [`database/migration_browser_v1.sql`](../database/migratio
 `✅` Env `DEFAULT_PROBE_REGION` (origem dos checks da API)  
 
 Migration: [`database/migration_probes_v1.sql`](../database/migration_probes_v1.sql)
+
+---
+
+## Fase 20 — OpenTelemetry
+
+`✅` SDK OTel na API (HTTP, Express, pg + spans do CheckOrchestrator)  
+`✅` Export OTLP HTTP via `OTEL_EXPORTER_OTLP_ENDPOINT` (desligado se ausente)  
+`✅` Métricas internas espelhadas (`pulse.*`) + histograma de ciclo de ping  
+`✅` Logs JSON com `trace_id` / `span_id` quando há span ativo  
+`✅` `GET /metrics` inclui bloco `otel` (status/endpoint sanitizado)  
+
+Env: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`, `OTEL_SDK_DISABLED`, `OTEL_DIAGNOSTICS`
+
+---
+
+## Fase 21 — Real User Monitoring (RUM)
+
+`✅` Sites RUM com token `ap_rum_…` + migration `migration_rum_v1.sql`  
+`✅` Ingest público `POST /api/rum/ingest` (CORS liberado, token-gated)  
+`✅` Dashboard `/rum`: sites, Web Vitals (P50/P75/P95), erros recentes  
+`✅` Pacote `@analytic-pulse/rum` (page views, vitals, erros)  
+
+---
+
+## Fase 22 — IA RCA automática
+
+`✅` Ao abrir incidente, enfileira análise Groq (`AI_RCA_AUTO`, default on)  
+`✅` Persiste sugestão em `incidents.ai_analysis` (nunca altera `root_cause`/status)  
+`✅` Rate limit (3/min/usuário, 2 paralelos) + timeline `ai_analysis_ready`  
+`✅` UI mostra análise automática no detalhe; reanálise manual permanece  
+
+Migration: [`database/migration_ai_rca_v1.sql`](../database/migration_ai_rca_v1.sql)
 
 ---
 

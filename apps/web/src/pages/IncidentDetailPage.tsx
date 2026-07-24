@@ -237,7 +237,12 @@ export const IncidentDetailPage: React.FC = () => {
 
             {/* Meta + comments */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <IncidentAiAnalysisCard incidentId={incident.id} />
+              <IncidentAiAnalysisCard
+                incidentId={incident.id}
+                initialAnalysis={incident.ai_analysis}
+                initialStatus={incident.ai_analysis_status}
+                onRefresh={() => load(true)}
+              />
 
               <div className="glass" style={{ padding: 24 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Detalhes</h2>
