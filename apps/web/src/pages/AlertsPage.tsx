@@ -24,6 +24,7 @@ import type {
   AlertRule,
   Monitor,
 } from '../types';
+import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
 
 const CHANNEL_KINDS: AlertChannelKind[] = [
   'telegram',
@@ -101,6 +102,8 @@ export const AlertsPage: React.FC = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  usePolling(() => load(), POLL_INTERVAL_MS, !loading);
 
   async function handleCreateChannel(e: React.FormEvent) {
     e.preventDefault();

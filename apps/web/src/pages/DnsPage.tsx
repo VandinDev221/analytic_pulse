@@ -11,6 +11,7 @@ import {
 import { getDnsOverview, scanDnsDomain } from '../services/api';
 import type { DnsDomainScan, DnsOverview, DnsRecordType } from '../types';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
+import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
 
 export const DnsPage: React.FC = () => {
   const [data, setData] = useState<DnsOverview | null>(null);
@@ -38,6 +39,8 @@ export const DnsPage: React.FC = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  usePolling(() => load(true), POLL_INTERVAL_MS, !loading);
 
   async function handleScan(e: React.FormEvent) {
     e.preventDefault();

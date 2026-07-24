@@ -8,6 +8,7 @@ import {
 } from '../services/api';
 import type { Agent, AgentsOverview } from '../types';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
+import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
 
 function formatPct(n: number | null | undefined): string {
   if (n == null || Number.isNaN(n)) return '—';
@@ -39,9 +40,9 @@ export const AgentsPage: React.FC = () => {
 
   useEffect(() => {
     load();
-    const t = setInterval(() => load(true), 15000);
-    return () => clearInterval(t);
   }, [load]);
+
+  usePolling(() => load(true), POLL_INTERVAL_MS, !loading);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
