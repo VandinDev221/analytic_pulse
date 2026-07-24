@@ -53,6 +53,15 @@ export const env = {
   otelServiceName: read('OTEL_SERVICE_NAME', 'analytic-pulse-api') || 'analytic-pulse-api',
   /** RCA automática ao abrir incidente (requer GROQ_API_KEY). Desligue com AI_RCA_AUTO=false */
   aiRcaAutoEnabled: (read('AI_RCA_AUTO', 'true') || 'true').toLowerCase() !== 'false',
+  /** Vigia — agente watchman 24/7 */
+  vigiaEnabled: (read('VIGIA_ENABLED', 'true') || 'true').toLowerCase() !== 'false',
+  vigiaTz: read('VIGIA_TZ', 'America/Sao_Paulo') || 'America/Sao_Paulo',
+  vigiaTelegramChatId: read('VIGIA_TELEGRAM_CHAT_ID'),
+  vigiaAutoRemediate:
+    (read('VIGIA_AUTO_REMEDIATE', 'true') || 'true').toLowerCase() !== 'false',
+  /** Hora local (0–23) para digest diário; default 8h */
+  vigiaDigestHour: Number(read('VIGIA_DIGEST_HOUR', '8') || '8'),
+  vigiaMaxActionsPerHour: Number(read('VIGIA_MAX_ACTIONS_PER_HOUR', '10') || '10'),
 } as const;
 
 export function assertCriticalEnv(): void {

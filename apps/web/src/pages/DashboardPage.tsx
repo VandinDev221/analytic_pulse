@@ -16,6 +16,7 @@ import { MonitorCard } from '../components/MonitorCard';
 import { MonitorModal } from '../components/MonitorModal';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import { LiveIndicator } from '../components/LiveIndicator';
+import { VigiaGreetingBanner } from '../components/VigiaGreetingBanner';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
 import { DashboardHeatmap } from '../components/dashboard/DashboardHeatmap';
 import { UsageChart } from '../components/dashboard/UsageChart';
@@ -81,6 +82,7 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="page page--wide">
+      <VigiaGreetingBanner />
       <div className="page-header">
         <div>
           <div className="page-header__title-row">

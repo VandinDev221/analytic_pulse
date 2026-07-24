@@ -685,3 +685,94 @@ export async function deleteRumSite(id: string): Promise<void> {
     throw new Error(err.error || 'Falha ao remover site RUM');
   }
 }
+
+// ── Vigia ─────────────────────────────────────────────────────
+
+export async function getVigiaOverview(): Promise<import('../types').VigiaOverview> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/vigia/overview`, { headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao carregar Vigia');
+  }
+  return res.json();
+}
+
+export async function getVigiaGreeting(): Promise<import('../types').VigiaGreeting> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/vigia/greeting`, { headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao saudar com o Vigia');
+  }
+  return res.json();
+}
+
+export async function getVigiaStatus(): Promise<import('../types').VigiaStatus> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/vigia/status`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch Vigia status');
+  return res.json();
+}
+
+export async function setVigiaMode(
+  mode: import('../types').VigiaMode
+): Promise<import('../types').VigiaStatus> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/vigia/mode`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ mode }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao alterar modo do Vigia');
+  }
+  return res.json();
+}
+
+export async function generateVigiaDigest(
+  telegram = true
+): Promise<import('../types').VigiaDigest> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/vigia/digest`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ telegram }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao gerar relatório');
+  }
+  return res.json();
+}
+
+export async function runVigiaRound(): Promise<Record<string, unknown>> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/vigia/round`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao rodar ronda do Vigia');
+  }
+  return res.json();
+}
+
+export async function chatWithVigia(
+  messages: AssistantChatMessage[]
+): Promise<AssistantChatMessage> {
+  const headers = getAuthHeader();
+  const res = await fetch(`${API}/vigia/chat`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ messages }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Falha ao conversar com o Vigia');
+  }
+  const data = await res.json();
+  return data.message as AssistantChatMessage;
+}

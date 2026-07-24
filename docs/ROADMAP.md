@@ -282,6 +282,24 @@ Migration: [`database/migration_ai_rca_v1.sql`](../database/migration_ai_rca_v1.
 
 ---
 
+## Fase 23 — Vigia (watchman 24/7)
+
+Agente isolado que cumprimenta no login, gera digest, propõe/executa playbooks e conversa com contexto operacional.
+
+`✅` Migration `vigia_sessions` / `vigia_actions` / `vigia_digests` / `vigia_rounds`  
+`✅` API `/api/vigia/*` (greeting, overview, mode, digest, round, chat)  
+`✅` Cron `POST|GET /api/cron/vigia` (+ alias `vigia-digest`)  
+`✅` Telegram: `/relatorio`, `/vigia`, `/pause`, `/resume`  
+`✅` UI `/vigia` + banner de saudação no dashboard  
+`✅` Modos `observe` | `remediate` | `pause` + circuit breaker  
+`✅` Playbooks allowlist: recheck, ack noise, ssl_warn, agent_stale, api_unhealthy  
+`✅` Predições (SSL, multi-down, agent, RUM) no digest  
+
+Env: `VIGIA_ENABLED`, `VIGIA_TZ`, `VIGIA_TELEGRAM_CHAT_ID`, `VIGIA_AUTO_REMEDIATE`, `VIGIA_DIGEST_HOUR`, `VIGIA_MAX_ACTIONS_PER_HOUR`  
+Migration: [`database/migration_vigia_v1.sql`](../database/migration_vigia_v1.sql)
+
+---
+
 ## Como avançar
 
 1. Escolher **uma** fase (ou um slice vertical dela).

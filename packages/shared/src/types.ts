@@ -1353,3 +1353,113 @@ export interface RumOverview {
   vitals: RumVitalStat[];
   recent_errors: RumEvent[];
 }
+
+// ── Vigia (watchman agent) ────────────────────────────────────
+
+export type VigiaMode = 'observe' | 'remediate' | 'pause';
+
+export type VigiaSeverity = 'info' | 'warn' | 'critical' | 'actionable';
+
+export type VigiaActionStatus =
+  | 'proposed'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'skipped'
+  | 'notified';
+
+export type VigiaPlaybookId =
+  | 'recheck_monitor'
+  | 'ack_known_noise'
+  | 'ssl_warn'
+  | 'agent_stale'
+  | 'api_unhealthy';
+
+export interface VigiaStatus {
+  enabled: boolean;
+  mode: VigiaMode;
+  auto_remediate: boolean;
+  timezone: string;
+  last_greeting_at: string | null;
+  last_round_at: string | null;
+  last_digest_at: string | null;
+  circuit_open_until: string | null;
+  consecutive_failures: number;
+  online: boolean;
+}
+
+export interface VigiaGreeting {
+  salutation: string;
+  period: 'morning' | 'afternoon' | 'evening' | 'night';
+  lines: string[];
+  summary: VigiaDigestSummary;
+  status: VigiaStatus;
+}
+
+export interface VigiaDigestSummary {
+  monitors_total: number;
+  monitors_down: number;
+  incidents_open: number;
+  incidents_resolved_24h: number;
+  ssl_critical: number;
+  agents_offline: number;
+  rum_errors_24h: number;
+  actions_24h: number;
+  predictions: VigiaPrediction[];
+}
+
+export interface VigiaDigest {
+  id: string;
+  user_id: string;
+  period_start: string;
+  period_end: string;
+  summary: VigiaDigestSummary;
+  text_html: string | null;
+  delivered_telegram: boolean;
+  created_at: string;
+}
+
+export interface VigiaAction {
+  id: string;
+  user_id: string;
+  playbook_id: VigiaPlaybookId | null;
+  severity: VigiaSeverity;
+  status: VigiaActionStatus;
+  title: string;
+  explanation: string | null;
+  target_type: string | null;
+  target_id: string | null;
+  input: Record<string, unknown>;
+  result: Record<string, unknown>;
+  created_at: string;
+  finished_at: string | null;
+}
+
+export interface VigiaRound {
+  id: string;
+  user_id: string;
+  started_at: string;
+  finished_at: string | null;
+  mode: VigiaMode;
+  findings: number;
+  actions_run: number;
+  meta: Record<string, unknown>;
+}
+
+export interface VigiaPrediction {
+  kind: string;
+  title: string;
+  explanation: string;
+  severity: VigiaSeverity;
+  target_type?: string;
+  target_id?: string;
+}
+
+export interface VigiaOverview {
+  status: VigiaStatus;
+  greeting: VigiaGreeting;
+  latest_digest: VigiaDigest | null;
+  recent_actions: VigiaAction[];
+  recent_rounds: VigiaRound[];
+  predictions: VigiaPrediction[];
+}

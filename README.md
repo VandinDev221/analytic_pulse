@@ -82,6 +82,7 @@ O Render permite **apenas 1 Postgres gratuito** por workspace. Escolha uma opç�
    A Fase 11 (Docker) não exige migration — agrega snapshots dos agents.
    A Fase 12 (Kubernetes) idem — agrega `kubectl` via agents (`/kubernetes`).
    Para a Fase 13 (API pública), execute [`database/migration_public_api_v1.sql`](database/migration_public_api_v1.sql).
+   Para a Fase 23 (Vigia), execute [`database/migration_vigia_v1.sql`](database/migration_vigia_v1.sql).
    Docs da API: [`docs/API.md`](docs/API.md) · Swagger: `/api/docs`.
    SDKs: [`docs/SDKS.md`](docs/SDKS.md) (`packages/sdk`, `sdks/python`, `sdks/go`).
 

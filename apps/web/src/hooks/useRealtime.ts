@@ -11,7 +11,9 @@ export type RealtimeEventType =
   | 'incident.changed'
   | 'agent.updated'
   | 'alert.delivered'
-  | 'ping.cycle';
+  | 'ping.cycle'
+  | 'vigia.action'
+  | 'vigia.round';
 
 export interface RealtimeEvent {
   type: RealtimeEventType;

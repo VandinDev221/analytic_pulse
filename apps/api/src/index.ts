@@ -21,6 +21,7 @@ import { kubernetesRouter } from './modules/kubernetes';
 import { aiRouter } from './modules/ai';
 import { eventsRouter } from './modules/realtime';
 import { rumRouter } from './modules/rum';
+import { vigiaRouter } from './modules/vigia';
 import {
   apiKeysRouter,
   publicApiV1Router,
@@ -136,6 +137,7 @@ app.use('/api/kubernetes', kubernetesRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/rum', rumRouter);
+app.use('/api/vigia', vigiaRouter);
 app.use('/api/api-keys', apiKeysRouter);
 app.use('/api/v1', publicApiV1Router);
 app.get('/api/openapi.json', (_req, res) => {

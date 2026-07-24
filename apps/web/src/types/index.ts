@@ -108,6 +108,18 @@ export type {
   RumVitalStat,
   CreateRumSiteInput,
   AiAnalysisStatus,
+  VigiaMode,
+  VigiaSeverity,
+  VigiaActionStatus,
+  VigiaPlaybookId,
+  VigiaStatus,
+  VigiaGreeting,
+  VigiaDigestSummary,
+  VigiaDigest,
+  VigiaAction,
+  VigiaRound,
+  VigiaPrediction,
+  VigiaOverview,
 } from '@analytic-pulse/shared';
 
 export { CHECK_TYPES, MAP_REGIONS } from '@analytic-pulse/shared';

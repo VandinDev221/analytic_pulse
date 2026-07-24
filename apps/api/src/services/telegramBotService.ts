@@ -100,7 +100,11 @@ async function cmdHelp(chatId: number): Promise<void> {
 /ping URL — Testar um site
 /settings — Suas configurações
 /dashboard — Link do painel
-/about — Sobre o app`
+/about — Sobre o app
+/relatorio — Relatório do Vigia
+/vigia — Status do Vigia
+/pause — Pausar auto-correção do Vigia
+/resume — Retomar Vigia (modo remediate)`
   );
 }
 
@@ -304,6 +308,54 @@ Altere no <a href="${DASHBOARD_URL}">dashboard</a> → Notificações`,
   );
 }
 
+async function cmdRelatorio(chatId: number, user: LinkedUser): Promise<void> {
+  const { VigiaService } = await import('../modules/vigia/services/VigiaService');
+  const vigia = new VigiaService();
+  await reply(chatId, '⏳ Gerando relatório do Vigia...', user);
+  const digest = await vigia.generateDigest(user.user_id, {
+    deliverTelegram: false,
+  });
+  await reply(
+    chatId,
+    digest.text_html || 'Relatório gerado sem conteúdo.',
+    user
+  );
+}
+
+async function cmdVigia(chatId: number, user: LinkedUser): Promise<void> {
+  const { VigiaService } = await import('../modules/vigia/services/VigiaService');
+  const status = await new VigiaService().getStatus(user.user_id);
+  await reply(
+    chatId,
+    `👁️ <b>Vigia</b>
+
+• Ligado: <b>${status.enabled ? 'sim' : 'não'}</b>
+• Modo: <b>${status.mode}</b>
+• Online: <b>${status.online ? 'sim' : 'não'}</b>
+• Auto-remediar: <b>${status.auto_remediate ? 'sim' : 'não'}</b>
+• Última ronda: ${status.last_round_at || '—'}
+• Último digest: ${status.last_digest_at || '—'}
+${status.circuit_open_until ? `• Circuit breaker até: ${status.circuit_open_until}` : ''}`,
+    user
+  );
+}
+
+async function cmdPause(chatId: number, user: LinkedUser): Promise<void> {
+  const { VigiaService } = await import('../modules/vigia/services/VigiaService');
+  await new VigiaService().setMode(user.user_id, 'pause');
+  await reply(chatId, '⏸️ Vigia em <b>pause</b>. Use /resume para voltar.', user);
+}
+
+async function cmdResume(chatId: number, user: LinkedUser): Promise<void> {
+  const { VigiaService } = await import('../modules/vigia/services/VigiaService');
+  await new VigiaService().setMode(user.user_id, 'remediate');
+  await reply(
+    chatId,
+    '▶️ Vigia em modo <b>remediate</b> (auto-correção na allowlist).',
+    user
+  );
+}
+
 export async function handleTelegramUpdate(update: {
   message?: TelegramMessage;
 }): Promise<void> {
@@ -351,6 +403,18 @@ export async function handleTelegramUpdate(update: {
             break;
           case '/settings':
             await cmdSettings(chatId, user);
+            break;
+          case '/relatorio':
+            await cmdRelatorio(chatId, user);
+            break;
+          case '/vigia':
+            await cmdVigia(chatId, user);
+            break;
+          case '/pause':
+            await cmdPause(chatId, user);
+            break;
+          case '/resume':
+            await cmdResume(chatId, user);
             break;
           default:
             await reply(

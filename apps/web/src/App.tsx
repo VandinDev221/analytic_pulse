@@ -18,6 +18,7 @@ import { KubernetesPage } from './pages/KubernetesPage';
 import { ApiKeysPage } from './pages/ApiKeysPage';
 import { DocsPage } from './pages/DocsPage';
 import { RumPage } from './pages/RumPage';
+import { VigiaPage } from './pages/VigiaPage';
 import { StatusPage } from './pages/StatusPage';
 import { AppLayout } from './components/AppLayout';
 import { getMe } from './services/api';
@@ -219,6 +220,14 @@ function App() {
           element={
             user
               ? <AppLayout userSlug={userSlug}><RumPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/vigia"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><VigiaPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
         />
