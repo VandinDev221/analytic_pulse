@@ -8,6 +8,11 @@ import {
   Pause,
   Eye,
   FileText,
+  Activity,
+  AlertTriangle,
+  Lock,
+  Cpu,
+  Zap,
 } from 'lucide-react';
 import {
   getVigiaOverview,
@@ -20,7 +25,23 @@ import {
 import type { VigiaMode, VigiaOverview } from '../types';
 import { ChatMarkdown } from '../components/ChatMarkdown';
 import { LiveIndicator } from '../components/LiveIndicator';
+import { SmartStatCard } from '../components/dashboard/SmartStatCard';
 import { useLiveData } from '../hooks/useLiveData';
+
+function modeLabel(mode: VigiaMode): string {
+  if (mode === 'remediate') return 'Remediar';
+  if (mode === 'pause') return 'Pausado';
+  return 'Observar';
+}
+
+function statusTone(
+  status: string
+): 'default' | 'good' | 'bad' | 'warn' {
+  if (status === 'succeeded') return 'good';
+  if (status === 'failed') return 'bad';
+  if (status === 'proposed' || status === 'running') return 'warn';
+  return 'default';
+}
 
 export const VigiaPage: React.FC = () => {
   const [data, setData] = useState<VigiaOverview | null>(null);
@@ -115,170 +136,273 @@ export const VigiaPage: React.FC = () => {
   }
 
   if (loading) {
-    return <p style={{ color: 'var(--text-muted)' }}>Carregando Vigia...</p>;
+    return (
+      <div className="page page--wide">
+        <p className="vigia-muted">Carregando Vigia...</p>
+      </div>
+    );
   }
 
   if (!data) {
-    return <p style={{ color: 'var(--danger, #ef4444)' }}>{error || 'Vigia indisponível'}</p>;
+    return (
+      <div className="page page--wide">
+        <div className="glass vigia-alert vigia-alert--error">
+          {error || 'Vigia indisponível'}
+          <button type="button" className="btn btn-ghost" onClick={() => void load()}>
+            Tentar de novo
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const s = data.status;
   const summary = data.greeting.summary;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Shield size={22} /> Vigia
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 999,
-                background: s.online ? '#22c55e' : 'var(--text-muted)',
-                display: 'inline-block',
-              }}
-              title={s.online ? 'Online' : 'Aguardando ronda'}
-            />
-          </h1>
-          <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>
-            {data.greeting.salutation}. Modo <strong>{s.mode}</strong>
-            {s.circuit_open_until ? ' · circuit breaker ativo' : ''}
-          </p>
+    <div className="page page--wide vigia-page">
+      <div className="vigia-hero">
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <div>
+            <div className="page-header__title-row">
+              <h1>
+                <Shield size={22} className="vigia-hero__icon" /> Vigia
+              </h1>
+              <LiveIndicator status={liveStatus} />
+              <span className={`vigia-online ${s.online ? 'is-on' : 'is-off'}`}>
+                {s.online ? 'Online' : 'Aguardando ronda'}
+              </span>
+            </div>
+            <p className="page-header__desc">
+              {data.greeting.salutation}. Plantão em modo{' '}
+              <strong>{modeLabel(s.mode)}</strong>
+              {s.circuit_open_until ? ' · circuit breaker ativo' : ''}.
+            </p>
+          </div>
+          <div className="page-header__actions">
+            <button
+              type="button"
+              className="btn btn-ghost"
+              disabled={busy}
+              onClick={() => void load()}
+            >
+              <RefreshCw size={14} /> Atualizar
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              disabled={busy}
+              onClick={() => void onRound()}
+            >
+              <Eye size={14} /> Ronda
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={busy}
+              onClick={() => void onDigest()}
+            >
+              <FileText size={14} /> Relatório
+            </button>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <LiveIndicator status={liveStatus} />
-          <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => void load()}>
-            <RefreshCw size={14} /> Atualizar
-          </button>
-          <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => void onRound()}>
-            <Eye size={14} /> Ronda
-          </button>
-          <button type="button" className="btn" disabled={busy} onClick={() => void onDigest()}>
-            <FileText size={14} /> Relatório
-          </button>
-        </div>
+
+        <ul className="vigia-brief">
+          {data.greeting.lines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
       </div>
 
       {error ? (
-        <div className="card" style={{ padding: 12, color: 'var(--danger, #ef4444)' }}>{error}</div>
+        <div className="glass-sm vigia-alert vigia-alert--error">{error}</div>
       ) : null}
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button type="button" className={`btn ${s.mode === 'observe' ? '' : 'btn--ghost'}`} disabled={busy} onClick={() => void changeMode('observe')}>
-          <Eye size={14} /> Observe
-        </button>
-        <button type="button" className={`btn ${s.mode === 'remediate' ? '' : 'btn--ghost'}`} disabled={busy} onClick={() => void changeMode('remediate')}>
-          <Play size={14} /> Remediate
-        </button>
-        <button type="button" className={`btn ${s.mode === 'pause' ? '' : 'btn--ghost'}`} disabled={busy} onClick={() => void changeMode('pause')}>
-          <Pause size={14} /> Pause
-        </button>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
-        {[
-          ['Monitores', summary.monitors_total],
-          ['Down', summary.monitors_down],
-          ['Incidentes', summary.incidents_open],
-          ['SSL', summary.ssl_critical],
-          ['Agents off', summary.agents_offline],
-          ['RUM erros', summary.rum_errors_24h],
-          ['Ações 24h', summary.actions_24h],
-        ].map(([label, value]) => (
-          <div key={String(label)} className="card" style={{ padding: '14px 16px' }}>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{label}</div>
-            <div style={{ fontSize: 22, fontWeight: 650, marginTop: 4 }}>{value}</div>
-          </div>
+      <div className="vigia-modes" role="group" aria-label="Modo do Vigia">
+        {(
+          [
+            ['observe', 'Observar', Eye],
+            ['remediate', 'Remediar', Play],
+            ['pause', 'Pausar', Pause],
+          ] as const
+        ).map(([mode, label, Icon]) => (
+          <button
+            key={mode}
+            type="button"
+            className={`vigia-mode ${s.mode === mode ? 'is-active' : ''}`}
+            disabled={busy}
+            onClick={() => void changeMode(mode)}
+          >
+            <Icon size={15} />
+            {label}
+          </button>
         ))}
       </div>
 
-      <div className="card" style={{ padding: 16 }}>
-        <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>O Vigia viu (propostas / ações)</h2>
-        {data.recent_actions.length === 0 ? (
-          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>Nenhuma ação ainda.</p>
-        ) : (
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {data.recent_actions.slice(0, 20).map((a) => (
-              <li key={a.id} style={{ borderBottom: '1px solid var(--border, rgba(255,255,255,0.08))', paddingBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
-                  <strong>{a.title}</strong>
-                  <span style={{ color: 'var(--text-muted)' }}>{a.status} · {a.severity}</span>
+      <div className="dash-grid-4" style={{ marginBottom: 20 }}>
+        <SmartStatCard
+          label="Monitores"
+          value={String(summary.monitors_total)}
+          hint={`${summary.monitors_down} down`}
+          tone={summary.monitors_down > 0 ? 'bad' : 'good'}
+          icon={<Activity size={14} />}
+        />
+        <SmartStatCard
+          label="Incidentes"
+          value={String(summary.incidents_open)}
+          hint={`${summary.incidents_resolved_24h} resolvidos (24h)`}
+          tone={summary.incidents_open > 0 ? 'warn' : 'good'}
+          icon={<AlertTriangle size={14} />}
+        />
+        <SmartStatCard
+          label="SSL"
+          value={String(summary.ssl_critical)}
+          hint="no limiar de aviso"
+          tone={summary.ssl_critical > 0 ? 'warn' : 'default'}
+          icon={<Lock size={14} />}
+        />
+        <SmartStatCard
+          label="Agents"
+          value={String(summary.agents_offline)}
+          hint="sem heartbeat"
+          tone={summary.agents_offline > 0 ? 'warn' : 'good'}
+          icon={<Cpu size={14} />}
+        />
+        <SmartStatCard
+          label="RUM erros"
+          value={String(summary.rum_errors_24h)}
+          hint="últimas 24h"
+          tone={summary.rum_errors_24h > 0 ? 'warn' : 'default'}
+          icon={<Zap size={14} />}
+        />
+        <SmartStatCard
+          label="Ações"
+          value={String(summary.actions_24h)}
+          hint="do Vigia (24h)"
+          icon={<Shield size={14} />}
+        />
+      </div>
+
+      <div className="vigia-columns">
+        <section className="glass vigia-panel">
+          <div className="dash-panel__head">
+            <h2>O Vigia viu</h2>
+            <p>Propostas e ações recentes (auditável)</p>
+          </div>
+          {data.recent_actions.length === 0 ? (
+            <div className="dash-empty">Nenhuma ação ainda. Rode uma ronda ou aguarde o cron.</div>
+          ) : (
+            <ul className="vigia-action-list">
+              {data.recent_actions.slice(0, 20).map((a) => (
+                <li key={a.id} className={`vigia-action vigia-action--${statusTone(a.status)}`}>
+                  <div className="vigia-action__row">
+                    <strong>{a.title}</strong>
+                    <span className="vigia-pill">
+                      {a.status} · {a.severity}
+                    </span>
+                  </div>
+                  {a.explanation ? (
+                    <p className="vigia-action__expl">{a.explanation}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="glass vigia-panel vigia-panel--chat">
+          <div className="dash-panel__head">
+            <h2>Conversar</h2>
+            <p>Pergunte o que aconteceu — respostas com dados reais</p>
+          </div>
+          <div ref={listRef} className="vigia-chat-log">
+            {messages.length === 0 ? (
+              <div className="dash-empty">
+                Ex.: “O que está down?” ou “Resumo das últimas horas”
+              </div>
+            ) : (
+              messages.map((m, i) => (
+                <div
+                  key={`${m.role}-${i}`}
+                  className={`vigia-bubble vigia-bubble--${m.role}`}
+                >
+                  {m.role === 'assistant' ? (
+                    <ChatMarkdown content={m.content} />
+                  ) : (
+                    <span>{m.content}</span>
+                  )}
                 </div>
-                {a.explanation ? (
-                  <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>{a.explanation}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
+              ))
+            )}
+            {chatLoading ? (
+              <div className="vigia-muted" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Pensando…
+              </div>
+            ) : null}
+          </div>
+          <div className="vigia-chat-compose">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              rows={2}
+              placeholder="O que aconteceu nas últimas horas?"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void sendChat();
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="btn"
+              disabled={chatLoading || !input.trim()}
+              onClick={() => void sendChat()}
+              aria-label="Enviar"
+            >
+              <Send size={14} />
+            </button>
+          </div>
+        </section>
       </div>
 
       {data.predictions.length > 0 ? (
-        <div className="card" style={{ padding: 16 }}>
-          <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Antecipações</h2>
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.5 }}>
+        <section className="glass vigia-panel" style={{ marginTop: 16 }}>
+          <div className="dash-panel__head">
+            <h2>Antecipações</h2>
+            <p>Sinais antes de virar incidente</p>
+          </div>
+          <ul className="vigia-predict-list">
             {data.predictions.map((p) => (
               <li key={`${p.kind}-${p.title}`}>
-                <strong>{p.title}</strong> — {p.explanation}
+                <span className={`vigia-pill vigia-pill--${p.severity}`}>{p.severity}</span>
+                <div>
+                  <strong>{p.title}</strong>
+                  <p>{p.explanation}</p>
+                </div>
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       ) : null}
 
-      <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 280 }}>
-        <h2 style={{ margin: 0, fontSize: 15 }}>Conversar com o Vigia</h2>
-        <div ref={listRef} style={{ flex: 1, overflowY: 'auto', maxHeight: 320, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {messages.length === 0 ? (
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
-              Pergunte o que aconteceu, peça o resumo ou detalhes das ações.
-            </p>
-          ) : (
-            messages.map((m, i) => (
-              <div key={`${m.role}-${i}`} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '90%' }}>
-                {m.role === 'assistant' ? (
-                  <ChatMarkdown content={m.content} />
-                ) : (
-                  <span style={{ fontSize: 13 }}>{m.content}</span>
-                )}
-              </div>
-            ))
-          )}
-          {chatLoading ? <Loader2 size={16} className="spin" /> : null}
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            rows={2}
-            placeholder="O que aconteceu nas últimas horas?"
-            style={{ flex: 1, resize: 'vertical' }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void sendChat();
-              }
-            }}
-          />
-          <button type="button" className="btn" disabled={chatLoading || !input.trim()} onClick={() => void sendChat()}>
-            <Send size={14} />
-          </button>
-        </div>
-      </div>
-
       {data.recent_rounds.length > 0 ? (
-        <div className="card" style={{ padding: 16 }}>
-          <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Rondas recentes</h2>
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', fontSize: 12, color: 'var(--text-secondary)' }}>
+        <section className="glass vigia-panel" style={{ marginTop: 16 }}>
+          <div className="dash-panel__head">
+            <h2>Rondas recentes</h2>
+            <p>Heartbeat do plantão 24h</p>
+          </div>
+          <ul className="vigia-rounds">
             {data.recent_rounds.map((r) => (
-              <li key={r.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))' }}>
-                {r.started_at} · modo {r.mode} · achados {r.findings} · ações {r.actions_run}
+              <li key={r.id}>
+                <time>{new Date(r.started_at).toLocaleString('pt-BR')}</time>
+                <span>
+                  {modeLabel(r.mode)} · {r.findings} achados · {r.actions_run} ações
+                </span>
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       ) : null}
     </div>
   );

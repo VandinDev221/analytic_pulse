@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Shield } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { getVigiaGreeting } from '../services/api';
 import type { VigiaGreeting } from '../types';
 
@@ -30,55 +31,29 @@ export const VigiaGreetingBanner: React.FC = () => {
   if (hidden || !greeting) return null;
 
   return (
-    <div
-      className="card"
-      style={{
-        marginBottom: 20,
-        padding: '16px 18px',
-        display: 'flex',
-        gap: 14,
-        alignItems: 'flex-start',
-        border: '1px solid color-mix(in srgb, var(--accent, #6366f1) 35%, transparent)',
-        background:
-          'linear-gradient(135deg, color-mix(in srgb, var(--accent, #6366f1) 12%, transparent), transparent)',
-      }}
-    >
-      <div
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          display: 'grid',
-          placeItems: 'center',
-          background: 'var(--accent, #6366f1)',
-          color: '#fff',
-          flexShrink: 0,
-        }}
-      >
+    <div className="vigia-banner">
+      <div className="vigia-banner__icon" aria-hidden>
         <Shield size={18} />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 650, fontSize: 15, marginBottom: 6 }}>
-          {greeting.salutation} — Vigia{' '}
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 500,
-              color: greeting.status.online ? '#22c55e' : 'var(--text-muted)',
-            }}
-          >
-            ● {greeting.status.online ? 'online' : 'aguardando ronda'} · {greeting.status.mode}
+      <div className="vigia-banner__body">
+        <div className="vigia-banner__title">
+          {greeting.salutation} — Vigia
+          <span className={`vigia-online ${greeting.status.online ? 'is-on' : 'is-off'}`}>
+            {greeting.status.online ? 'Online' : 'Aguardando'} · {greeting.status.mode}
           </span>
         </div>
-        <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.55 }}>
-          {greeting.lines.map((line) => (
+        <ul className="vigia-brief">
+          {greeting.lines.slice(0, 4).map((line) => (
             <li key={line}>{line}</li>
           ))}
         </ul>
+        <Link to="/vigia" className="vigia-banner__link">
+          Abrir painel do Vigia →
+        </Link>
       </div>
       <button
         type="button"
-        className="btn btn--ghost"
+        className="btn btn-ghost"
         style={{ fontSize: 12 }}
         onClick={() => {
           localStorage.setItem(DISMISS_KEY, todayKey());
