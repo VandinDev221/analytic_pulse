@@ -11,7 +11,7 @@ import {
 import { getSslOverview } from '../services/api';
 import type { SslHealthStatus, SslOverview } from '../types';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { useLiveData } from '../hooks/useLiveData';
 
 function healthLabel(h: SslHealthStatus): string {
   switch (h) {
@@ -60,7 +60,7 @@ export const SslPage: React.FC = () => {
     load();
   }, [load]);
 
-  usePolling(() => load(true), POLL_INTERVAL_MS, !loading);
+  useLiveData(() => load(true), !loading);
 
   const s = data?.summary;
 

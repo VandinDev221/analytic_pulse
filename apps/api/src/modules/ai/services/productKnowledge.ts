@@ -17,15 +17,18 @@ uma plataforma open-source de observabilidade focada em monitoramento de uptime.
 - Prefira 1 ideia por seção; comece com a resposta direta e depois o "onde clicar".
 
 ## Produto (o que existe hoje)
-- Dashboard autenticado com sidebar: Dashboard, Analytics, SSL, DNS, Agents, Mapa, Incidentes, Alertas, Status Page.
+- Dashboard autenticado com sidebar: Dashboard, Analytics, SSL, DNS, Agents, Docker, Kubernetes, API, Mapa, Incidentes, Alertas, Status Page, Docs.
+- Agents: tipo Host (métricas) ou Probe (executa checks na região do mapa). Probe usa PULSE_AGENT_MODE=probe.
 - Marca na UI: PingPulse.
 - Auth: e-mail/senha, código de verificação no signup, login Google (quando configurado).
 
 ### Monitores
-- Tipos de check: HTTP/HTTPS, TCP/Port, PING, DNS, SSL.
-- Validações possíveis: keyword, header, JSON path/value, status codes.
+- Tipos de check: HTTP/HTTPS, Browser (Playwright), TCP/Port, PING, DNS, SSL.
+- Browser: abre a URL no Chromium headless; keyword = seletor CSS opcional que deve ficar visível.
+- Validações possíveis (HTTP): keyword, header, JSON path/value, status codes.
 - Timings: DNS, TCP, TLS, TTFB, Download, Total.
 - Histórico em ping_logs; pings periódicos (cron externo a cada ~1 minuto em produção).
+- Dashboard atualiza em tempo real via SSE (/api/events/stream); badge "Ao vivo".
 - Detalhe do monitor mostra métricas, uptime e metadados.
 
 ### Incidentes

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { collectMetrics } from './collect.js';
+import { runProbeLoop } from './probe.js';
 
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 
 function env(name: string, fallback = ''): string {
   return process.env[name]?.trim() || fallback;
@@ -23,17 +24,16 @@ async function pushOnce(apiUrl: string, token: string) {
     throw new Error(`Ingest failed (${res.status}): ${body.slice(0, 200)}`);
   }
 
-  const json = (await res.json()) as { ok?: boolean };
   console.log(
     `[pulse-agent] pushed ${payload.hostname} cpu=${payload.cpu?.usage_pct}% mem=${payload.memory?.usage_pct}%`
   );
-  return json;
 }
 
 async function main() {
   const apiUrl = env('PULSE_API_URL', env('API_URL', 'http://localhost:3001'));
   const token = env('PULSE_AGENT_TOKEN', env('AGENT_TOKEN'));
   const intervalSec = Number(env('PULSE_AGENT_INTERVAL', '30'));
+  const mode = env('PULSE_AGENT_MODE', 'host').toLowerCase();
 
   if (!token) {
     console.error(
@@ -42,8 +42,14 @@ async function main() {
     process.exit(1);
   }
 
+  if (mode === 'probe') {
+    console.log(`[pulse-agent] v${VERSION} mode=probe → ${apiUrl}`);
+    await runProbeLoop(apiUrl, token, intervalSec);
+    return;
+  }
+
   console.log(
-    `[pulse-agent] v${VERSION} → ${apiUrl} a cada ${intervalSec}s`
+    `[pulse-agent] v${VERSION} mode=host → ${apiUrl} a cada ${intervalSec}s`
   );
 
   const tick = async () => {

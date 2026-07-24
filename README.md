@@ -85,6 +85,16 @@ O Render permite **apenas 1 Postgres gratuito** por workspace. Escolha uma opç�
    Docs da API: [`docs/API.md`](docs/API.md) · Swagger: `/api/docs`.
    SDKs: [`docs/SDKS.md`](docs/SDKS.md) (`packages/sdk`, `sdks/python`, `sdks/go`).
 
+### Browser checks (Playwright)
+
+```bash
+npm run playwright:install -w @analytic-pulse/api
+# opcional: PLAYWRIGHT_ENABLED=false  PLAYWRIGHT_TIMEOUT_MS=30000
+```
+
+No dashboard, crie um monitor com tipo **Browser (Playwright)** e URL `https://…`.  
+O campo seletor CSS (opcional) deve ficar visível para o check passar.
+
 ### Linux Agent
 
 Ver [`apps/agent/README.md`](apps/agent/README.md). Crie um agent em `/agents`, copie o token e rode:
@@ -97,6 +107,22 @@ PULSE_API_URL=https://sua-api PULSE_AGENT_TOKEN=ap_agent_... npm start
 Com Docker no host, o agent (v0.2+) envia containers, CPU/RAM, restarts, volumes, networks e logs — visíveis em `/docker`.
 
 Com `kubectl` configurado no host, o agent (v0.3+) envia o snapshot do cluster — visível em `/kubernetes`.
+
+### Probes regionais
+
+1. Execute [`database/migration_probes_v1.sql`](database/migration_probes_v1.sql).
+2. Em `/agents`, crie um agent tipo **Probe** e escolha a região (ex.: `iad`).
+3. No servidor daquela região:
+
+```bash
+cd apps/agent && npm run build
+export PULSE_API_URL=https://sua-api
+export PULSE_AGENT_TOKEN=ap_agent_...
+export PULSE_AGENT_MODE=probe
+npm start
+```
+
+Monitores com `region_code` igual à do probe passam a ser checados por ele. Sem probe online, a API executa e grava `DEFAULT_PROBE_REGION` (padrão `gru`).
 
 ### SDKs (API pública)
 

@@ -1032,6 +1032,18 @@ select.input option {
   padding: 3px 10px;
 }
 
+.live-badge--off {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border);
+}
+
+.live-badge--connecting {
+  color: var(--yellow);
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
 .stats-row {
   display: flex;
   flex-wrap: wrap;

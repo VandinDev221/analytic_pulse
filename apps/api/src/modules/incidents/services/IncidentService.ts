@@ -10,6 +10,7 @@ import {
   mapIncident,
   type IncidentRepository,
 } from '../repositories/IncidentRepository';
+import { realtimeHub } from '../../realtime';
 
 const ACTIVE_STATUSES: IncidentStatus[] = [
   'open',
@@ -134,6 +135,14 @@ export class IncidentService {
 
     const updated = await this.incidents.update(id, userId, patch);
     if (!updated) throw new NotFoundError('Incident');
+
+    realtimeHub.publish(userId, {
+      type: 'incident.changed',
+      payload: {
+        incident_id: id,
+        status: input.status ?? current.status,
+      },
+    });
 
     return this.getDetail(id, userId);
   }

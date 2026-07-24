@@ -175,7 +175,8 @@ export class PgMonitorRepository implements MonitorRepository {
         `SELECT id, user_id, name, url, method, status, check_type,
                 host, port, dns_record_type, keyword, expected_status_codes,
                 expected_header_name, expected_header_value, json_path, json_expected,
-                request_headers, request_body, ssl_warn_days, ssl_last_warned_at
+                request_headers, request_body, ssl_warn_days, ssl_last_warned_at,
+                region_code
          FROM monitors
          WHERE status != 'inactive'`
       );
@@ -186,6 +187,7 @@ export class PgMonitorRepository implements MonitorRepository {
           user_id: mapped.user_id,
           status: mapped.status,
           ssl_last_warned_at: mapped.ssl_last_warned_at ?? null,
+          region_code: mapped.region_code ?? 'gru',
         };
       });
     } catch {
@@ -203,6 +205,7 @@ export class PgMonitorRepository implements MonitorRepository {
           ...mapped,
           user_id: mapped.user_id,
           status: mapped.status,
+          region_code: 'gru',
         };
       });
     }
@@ -212,71 +215,101 @@ export class PgMonitorRepository implements MonitorRepository {
     id: string,
     status: Extract<MonitorStatus, 'up' | 'down'>,
     responseTimeMs: number,
-    result?: CheckResult
+    result?: CheckResult,
+    probeRegion?: string
   ): Promise<void> {
+    const region =
+      probeRegion ||
+      (result?.meta?.probe_region as string | undefined) ||
+      null;
+
     if (result?.check_type === 'ssl' && result.meta) {
       const meta = result.meta;
-      await query(
-        `UPDATE monitors
-         SET status = $1,
-             last_checked_at = NOW(),
-             last_response_time_ms = $2,
-             ssl_issuer = $3,
-             ssl_subject = $4,
-             ssl_valid_from = $5,
-             ssl_valid_to = $6,
-             ssl_days_remaining = $7,
-             ssl_protocol = $8,
-             ssl_cipher = $9,
-             ssl_fingerprint = $10
-         WHERE id = $11`,
-        [
-          status,
-          responseTimeMs,
-          (meta.issuer as string | null) ?? null,
-          (meta.subject as string | null) ?? null,
-          (meta.valid_from as string | null) ?? null,
-          (meta.valid_to as string | null) ?? null,
-          meta.days_remaining != null ? Number(meta.days_remaining) : null,
-          (meta.protocol as string | null) ?? null,
-          (meta.cipher as string | null) ?? null,
-          (meta.fingerprint as string | null) ?? null,
-          id,
-        ]
-      );
-      return;
+      try {
+        await query(
+          `UPDATE monitors
+           SET status = $1,
+               last_checked_at = NOW(),
+               last_response_time_ms = $2,
+               ssl_issuer = $3,
+               ssl_subject = $4,
+               ssl_valid_from = $5,
+               ssl_valid_to = $6,
+               ssl_days_remaining = $7,
+               ssl_protocol = $8,
+               ssl_cipher = $9,
+               ssl_fingerprint = $10,
+               last_probe_region = COALESCE($11, last_probe_region)
+           WHERE id = $12`,
+          [
+            status,
+            responseTimeMs,
+            (meta.issuer as string | null) ?? null,
+            (meta.subject as string | null) ?? null,
+            (meta.valid_from as string | null) ?? null,
+            (meta.valid_to as string | null) ?? null,
+            meta.days_remaining != null ? Number(meta.days_remaining) : null,
+            (meta.protocol as string | null) ?? null,
+            (meta.cipher as string | null) ?? null,
+            (meta.fingerprint as string | null) ?? null,
+            region,
+            id,
+          ]
+        );
+        return;
+      } catch {
+        // fallback sem last_probe_region
+      }
     }
 
     if (result?.check_type === 'dns' && result.meta) {
       const meta = result.meta;
+      try {
+        await query(
+          `UPDATE monitors
+           SET status = $1,
+               last_checked_at = NOW(),
+               last_response_time_ms = $2,
+               dns_last_records = $3::jsonb,
+               dns_record_count = $4,
+               dns_resolved_at = NOW(),
+               dns_answers_preview = $5,
+               last_probe_region = COALESCE($6, last_probe_region)
+           WHERE id = $7`,
+          [
+            status,
+            responseTimeMs,
+            JSON.stringify(meta.records ?? []),
+            meta.record_count != null ? Number(meta.record_count) : null,
+            (meta.answers_preview as string | null) ?? null,
+            region,
+            id,
+          ]
+        );
+        return;
+      } catch {
+        // fallback
+      }
+    }
+
+    try {
       await query(
         `UPDATE monitors
          SET status = $1,
              last_checked_at = NOW(),
              last_response_time_ms = $2,
-             dns_last_records = $3::jsonb,
-             dns_record_count = $4,
-             dns_resolved_at = NOW(),
-             dns_answers_preview = $5
-         WHERE id = $6`,
-        [
-          status,
-          responseTimeMs,
-          JSON.stringify(meta.records ?? []),
-          meta.record_count != null ? Number(meta.record_count) : null,
-          (meta.answers_preview as string | null) ?? null,
-          id,
-        ]
+             last_probe_region = COALESCE($3, last_probe_region)
+         WHERE id = $4`,
+        [status, responseTimeMs, region, id]
       );
-      return;
+    } catch {
+      await query(
+        `UPDATE monitors
+         SET status = $1, last_checked_at = NOW(), last_response_time_ms = $2
+         WHERE id = $3`,
+        [status, responseTimeMs, id]
+      );
     }
-
-    await query(
-      `UPDATE monitors
-       SET status = $1, last_checked_at = NOW(), last_response_time_ms = $2
-       WHERE id = $3`,
-      [status, responseTimeMs, id]
-    );
   }
 
   async markSslWarned(id: string): Promise<void> {
@@ -286,43 +319,84 @@ export class PgMonitorRepository implements MonitorRepository {
     );
   }
 
-  async insertPingLog(monitorId: string, result: CheckResult): Promise<void> {
-    await query(
-      `INSERT INTO ping_logs (
-         monitor_id, status_code, response_time_ms, is_up, error_message,
-         check_type, dns_ms, tcp_ms, tls_ms, ttfb_ms, download_ms,
-         response_size_bytes, content_length, response_headers, redirect_chain,
-         ssl_meta, dns_meta
-       ) VALUES (
-         $1,$2,$3,$4,$5,
-         $6,$7,$8,$9,$10,$11,
-         $12,$13,$14::jsonb,$15::jsonb,
-         $16::jsonb,$17::jsonb
-       )`,
-      [
-        monitorId,
-        result.status_code,
-        result.response_time_ms,
-        result.is_up,
-        result.error_message,
-        result.check_type,
-        result.timings.dns_ms,
-        result.timings.tcp_ms,
-        result.timings.tls_ms,
-        result.timings.ttfb_ms,
-        result.timings.download_ms,
-        result.response_size_bytes,
-        result.content_length,
-        result.response_headers ? JSON.stringify(result.response_headers) : null,
-        result.redirect_chain ? JSON.stringify(result.redirect_chain) : null,
-        result.check_type === 'ssl' && result.meta
-          ? JSON.stringify(result.meta)
-          : null,
-        result.check_type === 'dns' && result.meta
-          ? JSON.stringify(result.meta)
-          : null,
-      ]
-    );
+  async insertPingLog(
+    monitorId: string,
+    result: CheckResult,
+    probeRegion?: string
+  ): Promise<void> {
+    const region =
+      probeRegion ||
+      (result.meta?.probe_region as string | undefined) ||
+      null;
+
+    try {
+      await query(
+        `INSERT INTO ping_logs (
+           monitor_id, status_code, response_time_ms, is_up, error_message,
+           check_type, dns_ms, tcp_ms, tls_ms, ttfb_ms, download_ms,
+           response_size_bytes, content_length, response_headers, redirect_chain,
+           ssl_meta, dns_meta, probe_region
+         ) VALUES (
+           $1,$2,$3,$4,$5,
+           $6,$7,$8,$9,$10,$11,
+           $12,$13,$14::jsonb,$15::jsonb,
+           $16::jsonb,$17::jsonb,$18
+         )`,
+        [
+          monitorId,
+          result.status_code,
+          result.response_time_ms,
+          result.is_up,
+          result.error_message,
+          result.check_type,
+          result.timings.dns_ms,
+          result.timings.tcp_ms,
+          result.timings.tls_ms,
+          result.timings.ttfb_ms,
+          result.timings.download_ms,
+          result.response_size_bytes,
+          result.content_length,
+          result.response_headers ? JSON.stringify(result.response_headers) : null,
+          result.redirect_chain ? JSON.stringify(result.redirect_chain) : null,
+          result.check_type === 'ssl' && result.meta
+            ? JSON.stringify(result.meta)
+            : null,
+          result.check_type === 'dns' && result.meta
+            ? JSON.stringify(result.meta)
+            : null,
+          region,
+        ]
+      );
+    } catch {
+      await query(
+        `INSERT INTO ping_logs (
+           monitor_id, status_code, response_time_ms, is_up, error_message,
+           check_type, dns_ms, tcp_ms, tls_ms, ttfb_ms, download_ms,
+           response_size_bytes, content_length, response_headers, redirect_chain
+         ) VALUES (
+           $1,$2,$3,$4,$5,
+           $6,$7,$8,$9,$10,$11,
+           $12,$13,$14::jsonb,$15::jsonb
+         )`,
+        [
+          monitorId,
+          result.status_code,
+          result.response_time_ms,
+          result.is_up,
+          result.error_message,
+          result.check_type,
+          result.timings.dns_ms,
+          result.timings.tcp_ms,
+          result.timings.tls_ms,
+          result.timings.ttfb_ms,
+          result.timings.download_ms,
+          result.response_size_bytes,
+          result.content_length,
+          result.response_headers ? JSON.stringify(result.response_headers) : null,
+          result.redirect_chain ? JSON.stringify(result.redirect_chain) : null,
+        ]
+      );
+    }
   }
 
   async getMetrics(monitorId: string): Promise<MonitorMetrics | null> {

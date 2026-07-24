@@ -5,9 +5,11 @@ import {
   type AuthenticatedRequest,
 } from '../../../middleware/auth';
 import { AgentService } from '../services/AgentService';
+import { ProbeService } from '../services/ProbeService';
 
 const router = Router();
 const service = new AgentService();
+const probes = new ProbeService();
 
 export interface AgentAuthenticatedRequest extends AuthenticatedRequest {
   agentId?: string;
@@ -65,6 +67,33 @@ router.post('/ingest', requireAgentToken as never, async (req: AgentAuthenticate
     return handleError(res, error);
   }
 });
+
+/** Probe: busca monitores due da região do agent */
+router.get(
+  '/probe/jobs',
+  requireAgentToken as never,
+  async (req: AgentAuthenticatedRequest, res) => {
+    try {
+      return res.json(await probes.claimJobs(req.agentId!));
+    } catch (error) {
+      return handleError(res, error);
+    }
+  }
+);
+
+/** Probe: envia resultados dos checks executados na região */
+router.post(
+  '/probe/results',
+  requireAgentToken as never,
+  async (req: AgentAuthenticatedRequest, res) => {
+    try {
+      const results = Array.isArray(req.body?.results) ? req.body.results : [];
+      return res.json(await probes.submitResults(req.agentId!, results));
+    } catch (error) {
+      return handleError(res, error);
+    }
+  }
+);
 
 router.use(requireAuth as never);
 

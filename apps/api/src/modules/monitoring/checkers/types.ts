@@ -19,6 +19,7 @@ export type CheckableMonitor = Pick<
   | 'request_headers'
   | 'request_body'
   | 'ssl_warn_days'
+  | 'region_code'
 >;
 
 export interface Checker {

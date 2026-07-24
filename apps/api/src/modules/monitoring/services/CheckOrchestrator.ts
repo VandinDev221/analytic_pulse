@@ -14,6 +14,9 @@ import { IncidentService } from '../../incidents/services/IncidentService';
 import { PgIncidentRepository } from '../../incidents/repositories/PgIncidentRepository';
 import { runCheck, runInBatches, type CheckableMonitor } from '../checkers';
 import type { MonitorRepository } from '../repositories/MonitorRepository';
+import { realtimeHub } from '../../realtime';
+import { env } from '../../../config/env';
+import { query } from '../../../infrastructure/db';
 
 export interface PingCycleResult {
   processed: number;
@@ -32,6 +35,35 @@ function didStatusChange(previous: MonitorStatus, isUp: boolean): boolean {
     return (previous === 'up' && !isUp) || (previous === 'down' && isUp);
   }
   return false;
+}
+
+const PROBE_ONLINE_MS = 120_000;
+
+async function onlineProbeRegionsByUser(): Promise<Map<string, Set<string>>> {
+  const map = new Map<string, Set<string>>();
+  try {
+    const result = await query(
+      `SELECT user_id, region_code, last_seen_at
+       FROM agents
+       WHERE kind = 'probe'
+         AND status != 'disabled'
+         AND region_code IS NOT NULL`
+    );
+    const now = Date.now();
+    for (const row of result.rows as Array<Record<string, unknown>>) {
+      const lastSeen = row.last_seen_at
+        ? new Date(row.last_seen_at as string).getTime()
+        : 0;
+      if (now - lastSeen > PROBE_ONLINE_MS) continue;
+      const userId = row.user_id as string;
+      const region = row.region_code as string;
+      if (!map.has(userId)) map.set(userId, new Set());
+      map.get(userId)!.add(region);
+    }
+  } catch {
+    // migration ainda não aplicada
+  }
+  return map;
 }
 
 export class CheckOrchestrator {
@@ -62,7 +94,16 @@ export class CheckOrchestrator {
     const log = logger.child({ component: 'CheckOrchestrator' });
     log.info('Ping cycle started');
 
-    const monitors = await this.monitors.findDueForCheck();
+    const allMonitors = await this.monitors.findDueForCheck();
+    const probeRegions = await onlineProbeRegionsByUser();
+
+    // Monitores com probe online na região ficam para o agent remoto
+    const monitors = allMonitors.filter((m) => {
+      const region = m.region_code || 'gru';
+      const covered = probeRegions.get(m.user_id)?.has(region);
+      return !covered;
+    });
+
     if (monitors.length === 0) {
       const flush = await this.alertDispatcher.processDue();
       return {
@@ -74,15 +115,27 @@ export class CheckOrchestrator {
       };
     }
 
-    log.info('Active monitors loaded', { count: monitors.length });
+    log.info('Active monitors loaded', {
+      count: monitors.length,
+      deferred_to_probes: allMonitors.length - monitors.length,
+    });
 
     let alertsEnqueued = 0;
+    const localRegion = env.defaultProbeRegion;
 
     const tasks = monitors.map((monitor) => async () => {
       const result = await runCheck(monitor);
-      const enqueued = await this.persistCheck(monitor, result);
+      const withProbe: CheckResult = {
+        ...result,
+        meta: {
+          ...(result.meta ?? {}),
+          probe_region: localRegion,
+          probe_source: 'api',
+        },
+      };
+      const enqueued = await this.persistCheck(monitor, withProbe, localRegion);
       alertsEnqueued += enqueued;
-      return { monitorId: monitor.id, name: monitor.name, ...result };
+      return { monitorId: monitor.id, name: monitor.name, ...withProbe };
     });
 
     const results = await runInBatches(tasks, 5);
@@ -95,6 +148,18 @@ export class CheckOrchestrator {
     inc('ping_cycles_total');
     if (failed > 0) inc('ping_cycle_failures_total', failed);
     setLastPingCycleDuration(elapsed_ms);
+
+    const userIds = new Set(monitors.map((m) => m.user_id).filter(Boolean));
+    realtimeHub.publishMany(userIds, {
+      type: 'ping.cycle',
+      payload: {
+        processed: monitors.length,
+        success,
+        failed,
+        elapsed_ms,
+        alerts_sent: flush.sent,
+      },
+    });
 
     log.info('Ping cycle completed', {
       processed: monitors.length,
@@ -115,16 +180,32 @@ export class CheckOrchestrator {
     };
   }
 
+  /**
+   * Aplica resultado vindo de um probe remoto (mesma pipeline de alertas/incidentes).
+   */
+  async applyExternalCheck(
+    monitor: CheckableMonitor & {
+      user_id: string;
+      status: MonitorStatus;
+      ssl_last_warned_at?: string | null;
+    },
+    result: CheckResult,
+    probeRegion: string
+  ): Promise<number> {
+    return this.persistCheck(monitor, result, probeRegion);
+  }
+
   private async persistCheck(
     monitor: CheckableMonitor & {
       user_id: string;
       status: MonitorStatus;
       ssl_last_warned_at?: string | null;
     },
-    result: CheckResult
+    result: CheckResult,
+    probeRegion?: string
   ): Promise<number> {
     try {
-      await this.monitors.insertPingLog(monitor.id, result);
+      await this.monitors.insertPingLog(monitor.id, result, probeRegion);
     } catch (error) {
       logger.error('Failed to save ping log', {
         monitorId: monitor.id,
@@ -141,10 +222,24 @@ export class CheckOrchestrator {
       monitor.id,
       newStatus,
       result.response_time_ms,
-      result
+      result,
+      probeRegion
     );
 
     recordPingResult(result.is_up);
+
+    realtimeHub.publish(monitor.user_id, {
+      type: 'monitor.updated',
+      payload: {
+        monitor_id: monitor.id,
+        name: monitor.name,
+        status: newStatus,
+        is_up: result.is_up,
+        response_time_ms: result.response_time_ms,
+        status_changed: statusChanged,
+        check_type: result.check_type,
+      },
+    });
 
     let enqueued = 0;
     let usedEngine = false;
@@ -238,6 +333,13 @@ export class CheckOrchestrator {
           statusCode: result.status_code,
           errorMessage: result.error_message,
           alertSent,
+        });
+        realtimeHub.publish(monitor.user_id, {
+          type: 'incident.changed',
+          payload: {
+            monitor_id: monitor.id,
+            is_up: result.is_up,
+          },
         });
       } catch (error) {
         logger.error('Incident lifecycle failed', {

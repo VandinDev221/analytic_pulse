@@ -184,14 +184,16 @@ export async function getAgent(id: string): Promise<import('../types').AgentDeta
   return res.json();
 }
 
-export async function createAgent(
-  name: string
-): Promise<import('../types').AgentCreated> {
+export async function createAgent(input: {
+  name: string;
+  kind?: 'host' | 'probe';
+  region_code?: string | null;
+}): Promise<import('../types').AgentCreated> {
   const headers = getAuthHeader();
   const res = await fetch(`${API}/agents`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(input),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

@@ -6,7 +6,6 @@ import {
   CheckCircle,
   AlertTriangle,
   Link2,
-  Radio,
   Gauge,
   Timer,
   ShieldCheck,
@@ -16,12 +15,13 @@ import type { Monitor, DashboardOverview } from '../types';
 import { MonitorCard } from '../components/MonitorCard';
 import { MonitorModal } from '../components/MonitorModal';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
+import { LiveIndicator } from '../components/LiveIndicator';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
 import { DashboardHeatmap } from '../components/dashboard/DashboardHeatmap';
 import { UsageChart } from '../components/dashboard/UsageChart';
 import { EventTimeline } from '../components/dashboard/EventTimeline';
 import { TopIncidents, TopLatencies } from '../components/dashboard/TopLists';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { useLiveData } from '../hooks/useLiveData';
 
 function formatMs(ms: number | null): string {
   if (ms == null) return '—';
@@ -74,7 +74,7 @@ export const DashboardPage: React.FC = () => {
       .catch(console.error);
   }, [load]);
 
-  usePolling(() => load(true), POLL_INTERVAL_MS, !loading);
+  const { status: liveStatus } = useLiveData(() => load(true), !loading);
 
   const s = overview?.summary;
   const allUp = s != null && s.monitors_down === 0 && s.monitors_total > 0;
@@ -85,12 +85,7 @@ export const DashboardPage: React.FC = () => {
         <div>
           <div className="page-header__title-row">
             <h1>Dashboard</h1>
-            {!loading && (
-              <span className="live-badge">
-                <Radio size={10} style={{ animation: 'pulse 2s ease-in-out infinite' }} />
-                Ao vivo
-              </span>
-            )}
+            {!loading && <LiveIndicator status={liveStatus} />}
           </div>
           <p className="page-header__desc">
             Visão operacional: disponibilidade, performance e incidentes.

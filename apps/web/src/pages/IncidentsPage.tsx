@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { getIncidents } from '../services/api';
 import type { Incident, IncidentStatus } from '../types';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { useLiveData } from '../hooks/useLiveData';
 
 type Filter = 'active' | 'resolved' | 'all';
 
@@ -66,7 +66,7 @@ export const IncidentsPage: React.FC = () => {
     load(false);
   }, [load]);
 
-  usePolling(() => load(true), POLL_INTERVAL_MS, !loading);
+  useLiveData(() => load(true), !loading);
 
   return (
     <div className="page">

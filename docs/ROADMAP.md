@@ -214,6 +214,40 @@ Toda sugestão possui **explicação**. O sistema funciona sem `GROQ_API_KEY` (U
 
 ---
 
+## Fase 17 — Tempo real (SSE)
+
+`✅` `RealtimeHub` in-memory + `GET /api/events/stream` (JWT)  
+`✅` Eventos: `monitor.updated`, `ping.cycle`, `agent.updated`, `incident.changed`, `alert.delivered`  
+`✅` Frontend `useRealtime` / `useLiveData` + badge Ao vivo  
+`✅` Polling longo só como fallback se SSE cair  
+
+---
+
+## Fase 18 — Synthetic Browser (Playwright)
+
+`✅` `check_type: browser` + `PlaywrightChecker`  
+`✅` Abre URL headless; `keyword` = seletor CSS opcional  
+`✅` UI no modal de monitor + OpenAPI  
+`✅` Env: `PLAYWRIGHT_ENABLED`, `PLAYWRIGHT_TIMEOUT_MS`  
+`✅` Install Chromium: `npm run playwright:install -w @analytic-pulse/api`  
+
+Migration (contrato): [`database/migration_browser_v1.sql`](../database/migration_browser_v1.sql)
+
+---
+
+## Fase 19 — Probes regionais
+
+`✅` Agents `kind=host|probe` + `region_code`  
+`✅` API `GET /api/agents/probe/jobs` + `POST /api/agents/probe/results`  
+`✅` CheckOrchestrator adia monitores cobertos por probe online  
+`✅` `last_probe_region` no monitor / mapa (“Check de”)  
+`✅` Agent `PULSE_AGENT_MODE=probe`  
+`✅` Env `DEFAULT_PROBE_REGION` (origem dos checks da API)  
+
+Migration: [`database/migration_probes_v1.sql`](../database/migration_probes_v1.sql)
+
+---
+
 ## Como avançar
 
 1. Escolher **uma** fase (ou um slice vertical dela).

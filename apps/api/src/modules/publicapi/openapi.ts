@@ -48,7 +48,7 @@ export const openapiSpec = {
           url: { type: 'string' },
           check_type: {
             type: 'string',
-            enum: ['http', 'https', 'tcp', 'port', 'ping', 'dns', 'ssl'],
+            enum: ['http', 'https', 'tcp', 'port', 'ping', 'dns', 'ssl', 'browser'],
           },
           interval_minutes: { type: 'integer' },
           method: { type: 'string' },

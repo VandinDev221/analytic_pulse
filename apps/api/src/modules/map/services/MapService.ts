@@ -65,6 +65,7 @@ export class MapService {
       status: MonitorStatus;
       check_type: CheckType;
       region_code: string | null;
+      last_probe_region: string | null;
       last_response_time_ms: number | null;
       last_checked_at: Date | string | null;
       interval_minutes: number;
@@ -72,7 +73,7 @@ export class MapService {
 
     try {
       const result = await query(
-        `SELECT id, name, status, check_type, region_code,
+        `SELECT id, name, status, check_type, region_code, last_probe_region,
                 last_response_time_ms, last_checked_at, interval_minutes
          FROM monitors
          WHERE user_id = $1 AND status != 'inactive'
@@ -81,18 +82,38 @@ export class MapService {
       );
       monitors = result.rows as typeof monitors;
     } catch {
-      const result = await query(
-        `SELECT id, name, status, check_type,
-                last_response_time_ms, last_checked_at, interval_minutes
-         FROM monitors
-         WHERE user_id = $1 AND status != 'inactive'
-         ORDER BY created_at ASC`,
-        [userId]
-      );
-      monitors = (result.rows as Array<Omit<(typeof monitors)[0], 'region_code'>>).map((m) => ({
-        ...m,
-        region_code: 'gru',
-      }));
+      try {
+        const result = await query(
+          `SELECT id, name, status, check_type, region_code,
+                  last_response_time_ms, last_checked_at, interval_minutes
+           FROM monitors
+           WHERE user_id = $1 AND status != 'inactive'
+           ORDER BY created_at ASC`,
+          [userId]
+        );
+        monitors = (result.rows as Array<Omit<(typeof monitors)[0], 'last_probe_region'>>).map(
+          (m) => ({
+            ...m,
+            last_probe_region: null,
+          })
+        );
+      } catch {
+        const result = await query(
+          `SELECT id, name, status, check_type,
+                  last_response_time_ms, last_checked_at, interval_minutes
+           FROM monitors
+           WHERE user_id = $1 AND status != 'inactive'
+           ORDER BY created_at ASC`,
+          [userId]
+        );
+        monitors = (
+          result.rows as Array<Omit<(typeof monitors)[0], 'region_code' | 'last_probe_region'>>
+        ).map((m) => ({
+          ...m,
+          region_code: 'gru',
+          last_probe_region: null,
+        }));
+      }
     }
 
     const byRegion = new Map<string, typeof monitors>();
@@ -122,6 +143,7 @@ export class MapService {
             : null,
           interval_minutes: m.interval_minutes,
           heartbeat_alive: heartbeatAlive(m.last_checked_at, m.interval_minutes),
+          last_probe_region: m.last_probe_region ?? null,
         });
       });
     }

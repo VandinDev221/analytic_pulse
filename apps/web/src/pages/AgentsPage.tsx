@@ -7,8 +7,9 @@ import {
   getAgentsOverview,
 } from '../services/api';
 import type { Agent, AgentsOverview } from '../types';
+import { MAP_REGIONS } from '../types';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { useLiveData } from '../hooks/useLiveData';
 
 function formatPct(n: number | null | undefined): string {
   if (n == null || Number.isNaN(n)) return '—';
@@ -21,6 +22,8 @@ export const AgentsPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [name, setName] = useState('');
+  const [kind, setKind] = useState<'host' | 'probe'>('host');
+  const [regionCode, setRegionCode] = useState('gru');
   const [creating, setCreating] = useState(false);
   const [newToken, setNewToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -42,14 +45,18 @@ export const AgentsPage: React.FC = () => {
     load();
   }, [load]);
 
-  usePolling(() => load(true), POLL_INTERVAL_MS, !loading);
+  useLiveData(() => load(true), !loading);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
     setCreating(true);
     try {
-      const created = await createAgent(name.trim());
+      const created = await createAgent({
+        name: name.trim(),
+        kind,
+        region_code: kind === 'probe' ? regionCode : null,
+      });
       setNewToken(created.token);
       setName('');
       await load(true);
@@ -84,10 +91,10 @@ export const AgentsPage: React.FC = () => {
       <div className="page-header">
         <div>
           <div className="page-header__title-row">
-            <h1>Linux Agents</h1>
+            <h1>Agents</h1>
           </div>
           <p className="page-header__desc">
-            CPU, RAM, swap, disco, temperatura, rede, containers, serviços e logs.
+            Hosts (métricas) e probes regionais (executam checks na região do mapa).
           </p>
         </div>
         <div className="page-header__actions">
@@ -126,8 +133,12 @@ export const AgentsPage: React.FC = () => {
             </button>
           </div>
           <p style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>
-            No servidor: <code>PULSE_API_URL</code> + <code>PULSE_AGENT_TOKEN</code> →{' '}
-            <code>npm start</code> em <code>apps/agent</code>
+            Host:{' '}
+            <code>PULSE_API_URL</code> + <code>PULSE_AGENT_TOKEN</code> →{' '}
+            <code>npm start</code>
+            <br />
+            Probe:{' '}
+            <code>PULSE_AGENT_MODE=probe</code> + token → o agent busca jobs da região.
           </p>
         </div>
       )}
@@ -135,15 +146,38 @@ export const AgentsPage: React.FC = () => {
       <section className="glass dash-panel" style={{ marginBottom: 16 }}>
         <div className="dash-panel__head">
           <h2>Novo agent</h2>
-          <p>Gera um token de ingestão</p>
+          <p>Host (métricas) ou Probe (checks na região)</p>
         </div>
-        <form onSubmit={handleCreate} className="dns-scan-form">
+        <form onSubmit={handleCreate} className="dns-scan-form" style={{ flexWrap: 'wrap' }}>
           <input
             className="input"
-            placeholder="Nome (ex: prod-web-01)"
+            placeholder="Nome (ex: probe-iad ou prod-web-01)"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+          <select
+            className="input"
+            value={kind}
+            onChange={(e) => setKind(e.target.value as 'host' | 'probe')}
+            style={{ maxWidth: 160 }}
+          >
+            <option value="host">Host</option>
+            <option value="probe">Probe</option>
+          </select>
+          {kind === 'probe' && (
+            <select
+              className="input"
+              value={regionCode}
+              onChange={(e) => setRegionCode(e.target.value)}
+              style={{ maxWidth: 220 }}
+            >
+              {MAP_REGIONS.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {r.city || r.name} ({r.code.toUpperCase()})
+                </option>
+              ))}
+            </select>
+          )}
           <button className="btn btn-primary" type="submit" disabled={creating || !name.trim()}>
             <Plus size={14} /> Criar
           </button>
@@ -182,6 +216,8 @@ export const AgentsPage: React.FC = () => {
                   <thead>
                     <tr>
                       <th>Nome</th>
+                      <th>Tipo</th>
+                      <th>Região</th>
                       <th>Status</th>
                       <th>CPU</th>
                       <th>RAM</th>
@@ -206,6 +242,8 @@ export const AgentsPage: React.FC = () => {
                               {a.hostname || a.token_prefix + '…'}
                             </div>
                           </td>
+                          <td>{a.kind === 'probe' ? 'Probe' : 'Host'}</td>
+                          <td>{a.region_code ? a.region_code.toUpperCase() : '—'}</td>
                           <td>
                             <span className={`ssl-health ssl-health--${a.status === 'online' ? 'ok' : a.status === 'offline' ? 'critical' : 'warning'}`}>
                               {a.status}

@@ -11,7 +11,7 @@ import {
 import { getDockerOverview } from '../services/api';
 import type { DockerOverview } from '../types';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { useLiveData } from '../hooks/useLiveData';
 
 function formatPct(n: number | null | undefined): string {
   if (n == null || Number.isNaN(n)) return '—';
@@ -59,7 +59,7 @@ export const DockerPage: React.FC = () => {
     load();
   }, [load]);
 
-  usePolling(() => load(true), POLL_INTERVAL_MS, !loading);
+  useLiveData(() => load(true), !loading);
 
   const filteredContainers = useMemo(() => {
     if (!data) return [];

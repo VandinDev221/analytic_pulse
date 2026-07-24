@@ -16,6 +16,7 @@ import { agentsRouter } from './modules/agents';
 import { dockerRouter } from './modules/docker';
 import { kubernetesRouter } from './modules/kubernetes';
 import { aiRouter } from './modules/ai';
+import { eventsRouter } from './modules/realtime';
 import {
   apiKeysRouter,
   publicApiV1Router,
@@ -112,6 +113,7 @@ app.use('/api/agents', agentsRouter);
 app.use('/api/docker', dockerRouter);
 app.use('/api/kubernetes', kubernetesRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/events', eventsRouter);
 app.use('/api/api-keys', apiKeysRouter);
 app.use('/api/v1', publicApiV1Router);
 app.get('/api/openapi.json', (_req, res) => {

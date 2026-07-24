@@ -16,7 +16,7 @@ import {
 } from '../services/api';
 import type { ApiKey, ApiKeysOverview } from '../types';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { useLiveData } from '../hooks/useLiveData';
 
 export const ApiKeysPage: React.FC = () => {
   const [data, setData] = useState<ApiKeysOverview | null>(null);
@@ -45,7 +45,7 @@ export const ApiKeysPage: React.FC = () => {
     load();
   }, [load]);
 
-  usePolling(() => load(true), POLL_INTERVAL_MS, !loading);
+  useLiveData(() => load(true), !loading);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();

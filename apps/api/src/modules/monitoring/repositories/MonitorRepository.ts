@@ -27,10 +27,15 @@ export interface MonitorRepository {
     id: string,
     status: Extract<MonitorStatus, 'up' | 'down'>,
     responseTimeMs: number,
-    result?: CheckResult
+    result?: CheckResult,
+    probeRegion?: string
   ): Promise<void>;
   markSslWarned(id: string): Promise<void>;
-  insertPingLog(monitorId: string, result: CheckResult): Promise<void>;
+  insertPingLog(
+    monitorId: string,
+    result: CheckResult,
+    probeRegion?: string
+  ): Promise<void>;
   getMetrics(monitorId: string): Promise<MonitorMetrics | null>;
   getRecentLogs(monitorId: string, limit?: number): Promise<
     Array<

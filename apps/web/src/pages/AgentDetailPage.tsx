@@ -21,7 +21,7 @@ import {
 import { getAgent } from '../services/api';
 import type { AgentDetail } from '../types';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { useLiveData } from '../hooks/useLiveData';
 
 export const AgentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,7 +46,7 @@ export const AgentDetailPage: React.FC = () => {
     load();
   }, [load]);
 
-  usePolling(() => load(), POLL_INTERVAL_MS, !loading && !!id);
+  useLiveData(() => load(), !loading && !!id);
 
   if (loading && !agent) return <div className="page"><div className="glass world-map-skeleton" /></div>;
   if (!agent) {

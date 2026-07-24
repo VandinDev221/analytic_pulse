@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Radio,
   RefreshCw,
   Map as MapIcon,
   Activity,
@@ -11,7 +10,8 @@ import {
 import { getMapOverview } from '../services/api';
 import type { MapOverview, MapServiceNode } from '../types';
 import { WorldMapCanvas } from '../components/map/WorldMapCanvas';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { LiveIndicator } from '../components/LiveIndicator';
+import { useLiveData } from '../hooks/useLiveData';
 
 function formatAgo(iso: string | null): string {
   if (!iso) return 'nunca';
@@ -53,7 +53,7 @@ export const MapPage: React.FC = () => {
     load();
   }, [load]);
 
-  usePolling(() => load(true), POLL_INTERVAL_MS, !loading);
+  const { status: liveStatus } = useLiveData(() => load(true), !loading);
 
   const s = data?.summary;
 
@@ -63,12 +63,7 @@ export const MapPage: React.FC = () => {
         <div>
           <div className="page-header__title-row">
             <h1>Mapa Mundial</h1>
-            {!loading && (
-              <span className="live-badge">
-                <Radio size={10} style={{ animation: 'pulse 2s ease-in-out infinite' }} />
-                Heartbeat
-              </span>
-            )}
+            {!loading && <LiveIndicator status={liveStatus} />}
           </div>
           <p className="page-header__desc">
             Nós por região, latência e pulso dos checks.
@@ -186,8 +181,14 @@ export const MapPage: React.FC = () => {
                     </strong>
                   </div>
                   <div className="map-side__row">
-                    <span>Região</span>
+                    <span>Região (alvo)</span>
                     <strong>{selected.region_code.toUpperCase()}</strong>
+                  </div>
+                  <div className="map-side__row">
+                    <span>Check de</span>
+                    <strong>
+                      {(selected.last_probe_region || selected.region_code).toUpperCase()}
+                    </strong>
                   </div>
                   <div className="map-side__row">
                     <span>Heartbeat</span>

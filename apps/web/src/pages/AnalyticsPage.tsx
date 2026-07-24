@@ -16,7 +16,7 @@ import {
   LatencyPercentileChart,
 } from '../components/analytics/AnalyticsCharts';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { useLiveData } from '../hooks/useLiveData';
 
 const RANGES: Array<{ value: AnalyticsRange; label: string }> = [
   { value: '7d', label: '7 dias' },
@@ -62,7 +62,7 @@ export const AnalyticsPage: React.FC = () => {
     load(range);
   }, [range, load]);
 
-  usePolling(() => load(range, true), POLL_INTERVAL_MS, !loading);
+  useLiveData(() => load(range, true), !loading);
 
   const s = data?.summary;
 

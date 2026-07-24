@@ -18,7 +18,7 @@ import type {
   IncidentSeverity,
   IncidentTimelineEvent,
 } from '../types';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { useLiveData } from '../hooks/useLiveData';
 import { IncidentAiAnalysisCard } from '../components/IncidentAiAnalysisCard';
 
 function formatDuration(ms: number): string {
@@ -70,7 +70,7 @@ export const IncidentDetailPage: React.FC = () => {
     load(false);
   }, [load]);
 
-  usePolling(() => load(true), POLL_INTERVAL_MS, !loading && !!id);
+  useLiveData(() => load(true), !loading && !!id);
 
   async function handleAcknowledge() {
     if (!id) return;

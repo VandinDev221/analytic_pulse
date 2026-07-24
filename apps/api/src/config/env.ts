@@ -43,6 +43,11 @@ export const env = {
   groqApiKey: read('GROQ_API_KEY'),
   /** Flagship em produção no Groq — https://console.groq.com/docs/models */
   groqModel: read('GROQ_MODEL', 'openai/gpt-oss-120b') || 'openai/gpt-oss-120b',
+  /** Synthetic browser checks (Playwright). Desligue com PLAYWRIGHT_ENABLED=false */
+  playwrightEnabled: (read('PLAYWRIGHT_ENABLED', 'true') || 'true').toLowerCase() !== 'false',
+  playwrightTimeoutMs: Number(read('PLAYWRIGHT_TIMEOUT_MS', '30000') || '30000'),
+  /** Região atribuída aos checks executados pela API (quando não há probe remoto) */
+  defaultProbeRegion: read('DEFAULT_PROBE_REGION', 'gru') || 'gru',
 } as const;
 
 export function assertCriticalEnv(): void {

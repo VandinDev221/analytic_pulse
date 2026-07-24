@@ -2,6 +2,7 @@ import type { CheckResult, CheckType } from '@analytic-pulse/shared';
 import { DnsChecker } from './DnsChecker';
 import { HttpChecker } from './HttpChecker';
 import { PingChecker } from './PingChecker';
+import { PlaywrightChecker } from './PlaywrightChecker';
 import { SslChecker } from './SslChecker';
 import { TcpChecker } from './TcpChecker';
 import { failResult, type CheckableMonitor, type Checker } from './types';
@@ -13,6 +14,7 @@ const checkers: Checker[] = [
   new DnsChecker(),
   new SslChecker(),
   new PingChecker(),
+  new PlaywrightChecker(),
 ];
 
 function matchesType(checker: Checker, type: CheckType): boolean {

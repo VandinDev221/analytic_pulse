@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Activity, Clock, CheckCircle, AlertTriangle, Radio } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Activity, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { getMonitor, getMonitorMetrics } from '../services/api';
 import type { Monitor, MonitorMetrics, PingLog } from '../types';
 import { LatencyChart } from '../components/LatencyChart';
 import { ChartSkeleton } from '../components/SkeletonLoader';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { LiveIndicator } from '../components/LiveIndicator';
+import { useLiveData } from '../hooks/useLiveData';
 
 export const MonitorDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -38,7 +39,7 @@ export const MonitorDetailPage: React.FC = () => {
     load(false);
   }, [load]);
 
-  usePolling(() => load(true), POLL_INTERVAL_MS, !loading && !!id);
+  const { status: liveStatus } = useLiveData(() => load(true), !loading && !!id);
 
   if (!monitor && !loading) {
     return (
@@ -83,13 +84,7 @@ export const MonitorDetailPage: React.FC = () => {
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div className="detail-card__title-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, wordBreak: 'break-word' }}>{monitor.name}</h1>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
-                      fontSize: 10, color: 'var(--green)', fontWeight: 600,
-                      background: 'rgba(34,197,94,0.1)', borderRadius: 99, padding: '2px 8px',
-                    }}>
-                      <Radio size={9} /> Ao vivo
-                    </span>
+                    <LiveIndicator status={liveStatus} />
                   </div>
                   <a href={monitor.url} target="_blank" rel="noopener noreferrer" className="detail-url">
                     <span style={{ minWidth: 0 }}>{monitor.url}</span> <ExternalLink size={11} style={{ flexShrink: 0 }} />

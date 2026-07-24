@@ -6,6 +6,7 @@ import {
   deliverToChannel,
   type AlertPayload,
 } from './channelDelivery';
+import { realtimeHub } from '../../realtime';
 
 export class AlertDispatcher {
   constructor(private readonly deliveries: AlertDeliveryRepository) {}
@@ -50,6 +51,16 @@ export class AlertDispatcher {
         await this.deliveries.markSent(delivery.id);
         sent += 1;
         inc('notifications_sent_total');
+        realtimeHub.publish(channel.user_id, {
+          type: 'alert.delivered',
+          payload: {
+            delivery_id: delivery.id,
+            channel_id: channel.id,
+            channel_kind: channel.kind,
+            rule: rule?.name,
+            monitor_id: delivery.monitor_id,
+          },
+        });
         logger.info('Alert delivered', {
           deliveryId: delivery.id,
           channel: channel.kind,

@@ -13,7 +13,7 @@ import {
 import { getKubernetesOverview } from '../services/api';
 import type { KubernetesOverview } from '../types';
 import { SmartStatCard } from '../components/dashboard/SmartStatCard';
-import { usePolling, POLL_INTERVAL_MS } from '../hooks/usePolling';
+import { useLiveData } from '../hooks/useLiveData';
 
 type Tab =
   | 'pods'
@@ -57,7 +57,7 @@ export const KubernetesPage: React.FC = () => {
     load();
   }, [load]);
 
-  usePolling(() => load(true), POLL_INTERVAL_MS, !loading);
+  useLiveData(() => load(true), !loading);
 
   const namespaces = useMemo(() => {
     if (!data) return [];

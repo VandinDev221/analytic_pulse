@@ -13,6 +13,7 @@ interface MonitorModalProps {
 const CHECK_OPTIONS: Array<{ value: CheckType; label: string }> = [
   { value: 'http', label: 'HTTP' },
   { value: 'https', label: 'HTTPS' },
+  { value: 'browser', label: 'Browser (Playwright)' },
   { value: 'tcp', label: 'TCP' },
   { value: 'port', label: 'Port' },
   { value: 'ping', label: 'PING' },
@@ -34,7 +35,7 @@ const DNS_OPTIONS: DnsRecordType[] = [
 ];
 
 function isHttpType(t: CheckType) {
-  return t === 'http' || t === 'https';
+  return t === 'http' || t === 'https' || t === 'browser';
 }
 
 function needsPort(t: CheckType) {
@@ -96,18 +97,27 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
         host: httpMode ? undefined : form.host.trim() || target,
         port: needsPort(form.check_type) ? Number(form.port) || undefined : undefined,
         dns_record_type: form.check_type === 'dns' ? form.dns_record_type : undefined,
-        keyword: httpMode && form.keyword.trim() ? form.keyword.trim() : undefined,
+        keyword: form.keyword.trim() ? form.keyword.trim() : undefined,
         expected_header_name:
-          httpMode && form.expected_header_name.trim()
+          form.check_type !== 'browser' &&
+          httpMode &&
+          form.expected_header_name.trim()
             ? form.expected_header_name.trim()
             : undefined,
         expected_header_value:
-          httpMode && form.expected_header_value.trim()
+          form.check_type !== 'browser' &&
+          httpMode &&
+          form.expected_header_value.trim()
             ? form.expected_header_value.trim()
             : undefined,
-        json_path: httpMode && form.json_path.trim() ? form.json_path.trim() : undefined,
+        json_path:
+          form.check_type !== 'browser' && httpMode && form.json_path.trim()
+            ? form.json_path.trim()
+            : undefined,
         json_expected:
-          httpMode && form.json_expected.trim() ? form.json_expected.trim() : undefined,
+          form.check_type !== 'browser' && httpMode && form.json_expected.trim()
+            ? form.json_expected.trim()
+            : undefined,
         region_code: form.region_code || 'gru',
         ssl_warn_days:
           form.check_type === 'ssl' ? Number(form.ssl_warn_days) || 30 : undefined,
@@ -132,7 +142,7 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
           <div>
             <h2 className="modal__title">{isEdit ? 'Editar Monitor' : 'Novo Monitor'}</h2>
             <p className="modal__subtitle">
-              HTTP, TCP, DNS, SSL, PING e validações de resposta
+              HTTP, Browser (Playwright), TCP, DNS, SSL, PING e validações
             </p>
           </div>
           <button type="button" onClick={onClose} className="btn btn-ghost modal__close" aria-label="Fechar">
@@ -223,7 +233,7 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
           )}
 
           <div className="modal-form-grid">
-            {httpMode && (
+            {httpMode && form.check_type !== 'browser' && (
               <div className="form-group">
                 <label className="form-label">Método HTTP</label>
                 <select className="input" value={form.method} onChange={(e) => set('method', e.target.value)}>
@@ -231,6 +241,21 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
                   <option>HEAD</option>
                   <option>POST</option>
                 </select>
+              </div>
+            )}
+            {form.check_type === 'browser' && (
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label className="form-label">Seletor CSS (opcional)</label>
+                <input
+                  className="input"
+                  placeholder='ex: [data-testid="ready"] ou #app'
+                  value={form.keyword}
+                  onChange={(e) => set('keyword', e.target.value)}
+                />
+                <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+                  Playwright abre a URL e espera o elemento ficar visível. Deixe vazio para só
+                  validar o carregamento da página.
+                </p>
               </div>
             )}
             {form.check_type === 'dns' && (
@@ -301,7 +326,7 @@ export const MonitorModal: React.FC<MonitorModalProps> = ({ onClose, onSaved, mo
             )}
           </div>
 
-          {httpMode && (
+          {httpMode && form.check_type !== 'browser' && (
             <>
               <button
                 type="button"

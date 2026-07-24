@@ -35,8 +35,8 @@ const SECTIONS = [
   { id: 'api', label: 'API pública' },
   { id: 'cli-sdks', label: 'CLI & SDKs' },
   { id: 'ia', label: 'Assistente & IA' },
-  { id: 'atualizacao', label: 'Atualização automática' },
-] as const;
+    { id: 'atualizacao', label: 'Tempo real' },
+  ] as const;
 
 export const DocsPage: React.FC = () => {
   const [active, setActive] = useState<string>('visao');
@@ -196,9 +196,16 @@ export const DocsPage: React.FC = () => {
               <Link to="/">Dashboard</Link> → abrir o monitor.
             </p>
             <ul className="docs-list">
+              <li>
+                Tipos: HTTP/HTTPS, <strong>Browser (Playwright)</strong>, TCP, Port, PING, DNS, SSL
+              </li>
+              <li>
+                Browser: abre a URL com Chromium headless; campo “Seletor CSS” (opcional) deve
+                ficar visível — ideal para SPAs e smoke de UI
+              </li>
               <li>Criação/edição pelo modal “Novo” no dashboard</li>
               <li>Resultados alimentam analytics, mapa, SSL/DNS (quando aplicável) e incidentes</li>
-              <li>API: <code>GET/POST/PATCH/DELETE /api/v1/monitors</code></li>
+              <li>API: <code>GET/POST/PATCH/DELETE /api/v1/monitors</code> com <code>check_type: "browser"</code></li>
             </ul>
           </section>
 
@@ -245,29 +252,47 @@ export const DocsPage: React.FC = () => {
           <section id="agents" className="docs-section glass dash-panel">
             <div className="dash-panel__head">
               <h2>Agents Linux</h2>
-              <p>Collector no servidor</p>
+              <p>Hosts e probes regionais</p>
             </div>
             <p>
-              O agent (Node.js) coleta métricas do host e faz POST autenticado por token{' '}
-              <code>ap_agent_…</code> para a API (<code>/api/agents/ingest</code>).
+              O agent (Node.js) pode rodar em dois modos:
             </p>
+            <ul className="docs-list">
+              <li>
+                <strong>Host</strong> — métricas do servidor (CPU, RAM, Docker, K8s…) via{' '}
+                <code>/api/agents/ingest</code>
+              </li>
+              <li>
+                <strong>Probe</strong> — executa checks dos monitores da região (mapa) via{' '}
+                <code>/api/agents/probe/jobs</code> e <code>/results</code>
+              </li>
+            </ul>
             <ol className="docs-steps">
               <li>
-                Em <Link to="/agents">Agents</Link>, crie um agent e copie o token (exibido uma vez).
+                Em <Link to="/agents">Agents</Link>, crie um agent (Host ou Probe + região) e copie o
+                token.
               </li>
               <li>
-                No servidor Linux:
-                <pre className="docs-code">{`cd apps/agent && npm install && npm run build
+                No servidor:
+                <pre className="docs-code">{`# Host
 export PULSE_API_URL="https://sua-api"
 export PULSE_AGENT_TOKEN="ap_agent_..."
-export PULSE_AGENT_INTERVAL=30
+npm start
+
+# Probe (ex.: IAD)
+export PULSE_AGENT_MODE=probe
+export PULSE_API_URL="https://sua-api"
+export PULSE_AGENT_TOKEN="ap_agent_..."
 npm start`}</pre>
               </li>
-              <li>Veja CPU, RAM, disco, rede, temperatura, serviços e logs no dashboard.</li>
+              <li>
+                No mapa, “Check de” mostra de qual região o último check veio (API local ou probe).
+              </li>
             </ol>
             <p className="docs-note">
-              Recomenda-se rodar como serviço <code>systemd</code> com restart automático. Detalhes
-              no README de <code>apps/agent</code>.
+              Sem probe online na região do monitor, a API executa o check e grava origem{' '}
+              <code>DEFAULT_PROBE_REGION</code> (padrão <code>gru</code>). Rode a migration{' '}
+              <code>database/migration_probes_v1.sql</code>.
             </p>
           </section>
 
@@ -391,14 +416,25 @@ pulse ssl`}</pre>
 
           <section id="atualizacao" className="docs-section glass dash-panel">
             <div className="dash-panel__head">
-              <h2>Atualização automática</h2>
-              <p>Dados sempre frescos</p>
+              <h2>Atualização em tempo real</h2>
+              <p>Sem precisar clicar em Atualizar</p>
             </div>
             <p>
-              As páginas de monitoramento recarregam os dados em segundo plano a cada ~30 segundos
-              e também quando você volta para a aba do navegador. Os botões “Atualizar” continuam
-              disponíveis para refresh manual imediato.
+              O dashboard mantém uma conexão SSE autenticada (<code>/api/events/stream</code>).
+              Quando um check termina, um agent envia métricas ou um incidente/alerta muda, a
+              página recebe o evento e recarrega os dados sozinha.
             </p>
+            <ul className="docs-list">
+              <li>
+                Badge <strong>Ao vivo</strong> = conexão ativa; <strong>Conectando</strong> /
+                <strong> Offline</strong> = reconexão automática
+              </li>
+              <li>Se a aba ficar em segundo plano, a conexão pausa e retoma ao voltar</li>
+              <li>
+                Fallback: se o stream cair, um polling longo (~5 min) cobre até a reconexão
+              </li>
+              <li>O botão “Atualizar” continua disponível para refresh imediato</li>
+            </ul>
           </section>
         </div>
       </div>

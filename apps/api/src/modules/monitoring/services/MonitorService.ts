@@ -28,11 +28,11 @@ function normalizeTarget(input: CreateMonitorInput | UpdateMonitorInput): void {
     throw new ValidationError(`Invalid check_type: ${input.check_type}`);
   }
 
-  if (checkType === 'http' || checkType === 'https') {
+  if (checkType === 'http' || checkType === 'https' || checkType === 'browser') {
     if ('url' in input && input.url) {
       let url = input.url.trim();
       if (!/^https?:\/\//i.test(url)) {
-        url = `${checkType}://${url}`;
+        url = `https://${url}`;
         (input as CreateMonitorInput).url = url;
       }
       assertValidHttpUrl(url);

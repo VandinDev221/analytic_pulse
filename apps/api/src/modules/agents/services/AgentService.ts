@@ -3,6 +3,7 @@ import type {
   Agent,
   AgentCreated,
   AgentDetail,
+  AgentKind,
   AgentMetricsPayload,
   AgentSnapshotPoint,
   AgentStatus,
@@ -10,9 +11,13 @@ import type {
   CreateAgentInput,
 } from '@analytic-pulse/shared';
 import { NotFoundError, ValidationError } from '@analytic-pulse/shared';
+import { MAP_REGIONS } from '@analytic-pulse/shared';
 import { query } from '../../../infrastructure/db';
+import { realtimeHub } from '../../realtime';
 
 const OFFLINE_AFTER_MS = 120_000;
+const VALID_KINDS: AgentKind[] = ['host', 'probe'];
+const VALID_REGIONS = new Set(MAP_REGIONS.map((r) => r.code));
 
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -52,6 +57,8 @@ function mapAgent(row: Record<string, unknown>): Agent {
     hostname: (row.hostname as string | null) ?? null,
     token_prefix: row.token_prefix as string,
     status,
+    kind: ((row.kind as AgentKind) || 'host') as AgentKind,
+    region_code: (row.region_code as string | null) ?? null,
     agent_version: (row.agent_version as string | null) ?? null,
     os_info: (row.os_info as Agent['os_info']) || {},
     latest_metrics: (row.latest_metrics as AgentMetricsPayload) || {},
@@ -67,16 +74,56 @@ export class AgentService {
     input: CreateAgentInput
   ): Promise<AgentCreated> {
     if (!input.name?.trim()) throw new ValidationError('name is required');
+    const kind: AgentKind = input.kind === 'probe' ? 'probe' : 'host';
+    if (input.kind && !VALID_KINDS.includes(input.kind)) {
+      throw new ValidationError('Invalid agent kind');
+    }
+    let regionCode: string | null = input.region_code?.trim() || null;
+    if (kind === 'probe') {
+      if (!regionCode || !VALID_REGIONS.has(regionCode)) {
+        throw new ValidationError(
+          'Probe agents require a valid region_code (ex: gru, iad, fra)'
+        );
+      }
+    } else if (regionCode && !VALID_REGIONS.has(regionCode)) {
+      regionCode = null;
+    }
+
     const { token, prefix, hash } = generateToken();
 
-    const result = await query(
-      `INSERT INTO agents (user_id, name, token_hash, token_prefix, status)
-       VALUES ($1, $2, $3, $4, 'pending')
-       RETURNING *`,
-      [userId, input.name.trim(), hash, prefix]
-    );
+    try {
+      const result = await query(
+        `INSERT INTO agents (user_id, name, token_hash, token_prefix, status, kind, region_code)
+         VALUES ($1, $2, $3, $4, 'pending', $5, $6)
+         RETURNING *`,
+        [userId, input.name.trim(), hash, prefix, kind, regionCode]
+      );
+      return { ...mapAgent(result.rows[0]), token };
+    } catch {
+      // migration ainda não aplicada — fallback sem kind/region
+      const result = await query(
+        `INSERT INTO agents (user_id, name, token_hash, token_prefix, status)
+         VALUES ($1, $2, $3, $4, 'pending')
+         RETURNING *`,
+        [userId, input.name.trim(), hash, prefix]
+      );
+      return { ...mapAgent(result.rows[0]), token };
+    }
+  }
 
-    return { ...mapAgent(result.rows[0]), token };
+  async findByIdInternal(id: string): Promise<Agent | null> {
+    const result = await query(`SELECT * FROM agents WHERE id = $1`, [id]);
+    if (!result.rows[0]) return null;
+    return mapAgent(result.rows[0]);
+  }
+
+  async touch(agentId: string): Promise<void> {
+    await query(
+      `UPDATE agents
+       SET last_seen_at = NOW(), status = 'online', updated_at = NOW()
+       WHERE id = $1`,
+      [agentId]
+    );
   }
 
   async list(userId: string): Promise<AgentsOverview> {
@@ -207,6 +254,19 @@ export class AgentService {
     );
 
     const result = await query(`SELECT * FROM agents WHERE id = $1`, [agentId]);
-    return mapAgent(result.rows[0]);
+    const agent = mapAgent(result.rows[0]);
+
+    realtimeHub.publish(agent.user_id, {
+      type: 'agent.updated',
+      payload: {
+        agent_id: agent.id,
+        name: agent.name,
+        status: agent.status,
+        cpu_pct: cpu,
+        mem_pct: mem,
+      },
+    });
+
+    return agent;
   }
 }

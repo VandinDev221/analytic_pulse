@@ -1,6 +1,6 @@
 export type MonitorStatus = 'active' | 'inactive' | 'up' | 'down' | 'unknown';
 
-/** Tipos de verificação suportados (Fase 1) */
+/** Tipos de verificação suportados */
 export type CheckType =
   | 'http'
   | 'https'
@@ -8,7 +8,8 @@ export type CheckType =
   | 'port'
   | 'ping'
   | 'dns'
-  | 'ssl';
+  | 'ssl'
+  | 'browser';
 
 export type DnsRecordType =
   | 'A'
@@ -30,6 +31,7 @@ export const CHECK_TYPES: CheckType[] = [
   'ping',
   'dns',
   'ssl',
+  'browser',
 ];
 
 export interface Monitor {
@@ -53,6 +55,7 @@ export interface Monitor {
   request_headers?: Record<string, string> | null;
   request_body?: string | null;
   region_code?: string | null;
+  last_probe_region?: string | null;
   ssl_issuer?: string | null;
   ssl_subject?: string | null;
   ssl_valid_from?: string | null;
@@ -660,6 +663,8 @@ export interface MapServiceNode {
   interval_minutes: number;
   /** true se o último check está dentro da janela esperada */
   heartbeat_alive: boolean;
+  /** Região de onde o último check foi executado (probe ou API) */
+  last_probe_region?: string | null;
 }
 
 export interface MapRegionAggregate {
@@ -840,6 +845,9 @@ export interface DnsDomainScan {
 
 export type AgentStatus = 'pending' | 'online' | 'offline' | 'disabled';
 
+/** host = métricas do servidor; probe = executor de checks na região */
+export type AgentKind = 'host' | 'probe';
+
 export interface AgentOsInfo {
   platform?: string;
   release?: string;
@@ -960,6 +968,8 @@ export interface Agent {
   hostname: string | null;
   token_prefix: string;
   status: AgentStatus;
+  kind: AgentKind;
+  region_code: string | null;
   agent_version: string | null;
   os_info: AgentOsInfo;
   latest_metrics: AgentMetricsPayload;
@@ -975,6 +985,37 @@ export interface AgentCreated extends Agent {
 
 export interface CreateAgentInput {
   name: string;
+  kind?: AgentKind;
+  region_code?: string | null;
+}
+
+export interface ProbeJobMonitor {
+  id: string;
+  name: string;
+  url: string;
+  method: string;
+  check_type: CheckType;
+  host?: string | null;
+  port?: number | null;
+  keyword?: string | null;
+  expected_status_codes?: number[] | null;
+  interval_minutes: number;
+  region_code: string;
+}
+
+export interface ProbeJobsResponse {
+  agent_id: string;
+  region_code: string;
+  jobs: ProbeJobMonitor[];
+}
+
+export interface ProbeCheckResultInput {
+  monitor_id: string;
+  status_code: number | null;
+  response_time_ms: number;
+  is_up: boolean;
+  error_message?: string | null;
+  check_type?: CheckType;
 }
 
 export interface AgentSnapshotPoint {
