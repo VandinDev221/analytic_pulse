@@ -16,6 +16,7 @@ export default defineConfig({
         '../../packages/ui/src/styles.css'
       ),
       '@analytic-pulse/ui': path.resolve(rootDir, '../../packages/ui/src'),
+      '@analytic-pulse/rum': path.resolve(rootDir, '../../packages/rum/src'),
     },
   },
   server: {

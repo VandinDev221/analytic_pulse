@@ -25,7 +25,8 @@
     "paths": {
       "@analytic-pulse/shared": ["../../packages/shared/src"],
       "@analytic-pulse/ui": ["../../packages/ui/src"],
-      "@analytic-pulse/ui/*": ["../../packages/ui/src/*"]
+      "@analytic-pulse/ui/*": ["../../packages/ui/src/*"],
+      "@analytic-pulse/rum": ["../../packages/rum/src"]
     }
   },
   "include": ["src"]
