@@ -54,7 +54,7 @@ export const RumPage: React.FC = () => {
     load();
   }, [load]);
 
-  useLiveData(() => load(true), !loading);
+  const { status: liveStatus } = useLiveData(() => load(true), !loading);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -103,7 +103,7 @@ export const RumPage: React.FC = () => {
         <div>
           <div className="page-header__title-row">
             <h1>RUM</h1>
-            <LiveIndicator />
+            {!loading && <LiveIndicator status={liveStatus} />}
           </div>
           <p className="page-header__desc">
             Real User Monitoring: Web Vitals, page views e erros do browser dos
