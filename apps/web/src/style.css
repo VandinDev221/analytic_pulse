@@ -2779,3 +2779,229 @@ select.input option {
   }
 }
 
+
+/* -- Docs page ---------------------------------------------------------------- */
+.docs-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.docs-toc {
+  position: sticky;
+  top: 16px;
+  padding: 12px 0;
+}
+
+.docs-toc__label {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.docs-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.docs-toc__link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.docs-toc__link:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.docs-toc__link.is-active {
+  color: var(--accent-light);
+  background: var(--accent-glow);
+}
+
+.docs-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.docs-section {
+  scroll-margin-top: 24px;
+  padding: 20px 22px;
+}
+
+.docs-section p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.docs-section p:last-child {
+  margin-bottom: 0;
+}
+
+.docs-section strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.docs-section a {
+  color: var(--accent-light);
+  text-decoration: none;
+}
+
+.docs-section a:hover {
+  text-decoration: underline;
+}
+
+.docs-section code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.docs-list,
+.docs-steps {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.docs-list li,
+.docs-steps li {
+  margin-bottom: 6px;
+}
+
+.docs-note {
+  font-size: 13px !important;
+  color: var(--text-muted) !important;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+}
+
+.docs-code {
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #0c0c10;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.docs-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  text-decoration: none !important;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.docs-card:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  background: var(--accent-glow);
+}
+
+.docs-card__icon {
+  color: var(--accent-light);
+  display: flex;
+}
+
+.docs-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.docs-card__text {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.docs-ext {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.docs-inline-icon {
+  display: inline;
+  vertical-align: -2px;
+  margin-right: 4px;
+  color: var(--accent-light);
+}
+
+@media (max-width: 900px) {
+  .docs-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .docs-toc {
+    position: static;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .docs-toc ul {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: max-content;
+  }
+
+  .docs-toc__link {
+    white-space: nowrap;
+    font-size: 12px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+
+  .docs-toc__link.is-active {
+    border-color: rgba(99, 102, 241, 0.4);
+  }
+}
