@@ -28,5 +28,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/VandinDev221/analytic_pulse.git"
+  },
+  "dependencies": {
+    "@analytic-pulse/rum": "^0.1.0"
   }
 }
