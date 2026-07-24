@@ -479,7 +479,7 @@ export class VigiaRepository {
     const r = await query(
       `SELECT id, name, url FROM monitors
        WHERE user_id = $1 AND status = 'down'
-       ORDER BY updated_at DESC
+       ORDER BY last_checked_at DESC NULLS LAST
        LIMIT 20`,
       [userId]
     );

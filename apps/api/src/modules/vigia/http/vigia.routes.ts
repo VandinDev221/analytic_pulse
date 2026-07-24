@@ -18,7 +18,17 @@ function handleError(res: Response, error: unknown): void {
     return;
   }
   console.error('Vigia route error:', error);
-  res.status(500).json({ error: 'Internal server error' });
+  const message = error instanceof Error ? error.message : 'Internal server error';
+  // Postgres: migration faltando ou coluna inválida
+  if (/relation .* does not exist|column .* does not exist/i.test(message)) {
+    res.status(503).json({
+      error:
+        'Schema do Vigia incompleto. Execute database/migration_vigia_v1.sql no Postgres.',
+      detail: message,
+    });
+    return;
+  }
+  res.status(500).json({ error: 'Internal server error', detail: message });
 }
 
 const chatLimiter = createRateLimiter({
