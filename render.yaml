@@ -43,22 +43,5 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
 
-  # ── Frontend SPA ────────────────────────────────────────────────────────────
-  - type: web
-    name: analytic-pulse-web
-    runtime: static
-    rootDir: .
-    buildCommand: npm ci && VITE_API_URL=https://analytic-pulse-api.onrender.com npm run build:web
-    staticPublishPath: apps/web/dist
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: analytic-pulse-api
-          envVarKey: RENDER_EXTERNAL_URL
-      - key: VITE_GOOGLE_CLIENT_ID
-        sync: false
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+  # Nota: O Frontend SPA (analytic-pulse-web) foi removido daqui e migrado para a Vercel
+  # para evitar o consumo duplo de instâncias gratuitas no Render (estouro do limite de 750h).

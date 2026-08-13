@@ -49,16 +49,16 @@ npm run dev:web        # http://localhost:5173
 
 ---
 
-## Deploy em produção (Render)
+## Deploy em produção (Gratuito e Otimizado)
 
-O Blueprint cria **API + frontend**. O banco Postgres é **externo** (você informa a connection string).
+Para garantir hospedagem estável e **100% gratuita** sem estourar limites de horas do Render, dividimos os recursos da seguinte forma:
 
-| Recurso | Nome | Função |
-|---------|------|--------|
-| **Web Service** | `analytic-pulse-api` | API Express |
-| **Static Site** | `analytic-pulse-web` | Frontend React |
-| **PostgreSQL** | (seu banco) | Render existente ou [Neon](https://neon.tech) |
-| **cron-job.org** | (externo) | Pings a cada minuto |
+| Recurso | Hospedagem | Função | Plano |
+|---------|------------|--------|-------|
+| **Web Service** | Render | API Express (`analytic-pulse-api`) | Free (apenas 1 serviço ativo, consome < 720h/m) |
+| **Static Site** | [Vercel](https://vercel.com) | Frontend React | Free (100% grátis, sem cold start) |
+| **PostgreSQL** | [Neon](https://neon.tech) | Banco de dados | Free (sem expiração de 90 dias do Render) |
+| **cron-job.org** | Externo | Pings a cada minuto e Keep-Alive da API | Free (evita que a API durma) |
 
 ### Passo a passo
 
@@ -198,78 +198,62 @@ Docs: [`docs/CLI.md`](docs/CLI.md).
 1. Delete o banco free não utilizado no Render.
 2. Crie um novo Postgres manualmente e rode o `schema.sql`.
 
-#### 2. Blueprint
+#### 2. Blueprint (Render — apenas API)
 
 1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Blueprint** (ou **Manual sync** no blueprint existente).
 2. Repositório `VandinDev221/analytic_pulse`, branch `main`.
-3. Quando pedir **`DATABASE_URL`** e **`POSTGRES_URL`**, cole a **mesma** connection string nos dois campos.
-4. Aguarde criar `analytic-pulse-api` e `analytic-pulse-web`.
+3. Quando pedir **`DATABASE_URL`** e **`POSTGRES_URL`**, cole a **mesma** connection string obtida no Neon.
+4. Aguarde criar `analytic-pulse-api`. (O frontend `analytic-pulse-web` foi removido do render.yaml para não consumir horas grátis).
 
-#### 3. Conferir variáveis
+#### 3. Conferir variáveis da API
 
 Render → **analytic-pulse-api** → **Environment**:
 
 | Variável | Deve conter |
 |----------|-------------|
-| `DATABASE_URL` | Connection string do Postgres |
+| `DATABASE_URL` | Connection string do Postgres (Neon) |
 | `POSTGRES_URL` | Igual ao `DATABASE_URL` |
 | `JWT_SECRET` | Gerado automaticamente |
-| `CRON_SECRET` | Gerado automaticamente |
-| `FRONTEND_URL` | URL(s) do frontend, separadas por vírgula se houver mais de uma |
-
-Exemplo com Vercel + Render:
-```
-FRONTEND_URL=https://analytic-pulse.vercel.app,https://analytic-pulse-web.onrender.com
-```
-
-Render → **analytic-pulse-web** → **Environment**:
-
-| Variável | Deve conter |
-|----------|-------------|
-| `VITE_API_URL` | `https://analytic-pulse-api.onrender.com` |
-
-Se `VITE_API_URL` estiver vazio, adicione manualmente e faça **Manual Deploy** no frontend.
+| `CRON_SECRET` | Gerado automaticamente (use no cron-job.org) |
+| `FRONTEND_URL` | URL do frontend na Vercel (ex: `https://seu-app.vercel.app`) |
 
 ---
 
-## Frontend na Vercel
+## Deploy do Frontend na Vercel
 
-1. Importe o repo na [Vercel](https://vercel.com) com **Root Directory** = `apps/web`.
-2. Em **Settings → General / Build & Development**:
+1. Importe o repositório na [Vercel](https://vercel.com).
+2. Em **Project Settings**:
+   - **Root Directory:** selecione `apps/web`.
+   - **Framework Preset:** `Vite` (deve ser detectado automaticamente).
+3. Em **Build & Development Settings**:
+   - Marque a caixa de seleção para customizar os comandos se necessário:
    - **Install Command:** `cd ../.. && npm install`
    - **Build Command:** `cd ../.. && npm run build:web`
-   - **Output Directory:** `dist` (relativo a `apps/web`)
-3. **Environment Variables:**
+   - **Output Directory:** `dist`
+4. Em **Environment Variables**:
    | Variável | Valor |
    |----------|-------|
-   | `VITE_API_URL` | `https://analytic-pulse-api.onrender.com` |
-4. Deploy.
-
-5. Na API (Render) → **Environment** → atualize `FRONTEND_URL`:
-   ```
-   https://analytic-pulse.vercel.app
-   ```
-   Ou várias origens separadas por vírgula se usar Vercel e Render ao mesmo tempo.
-
-6. **Redeploy** da API após alterar `FRONTEND_URL`.
+   | `VITE_API_URL` | URL da sua API no Render (ex: `https://analytic-pulse-api.onrender.com`) |
+5. Clique em **Deploy**.
+6. Pegue a URL do projeto gerada pela Vercel e configure-a na variável `FRONTEND_URL` da sua API no Render, efetuando um novo deploy da API para aplicar o CORS correto.
 
 ---
 
-#### 4. Cron de pings
+#### 4. Cron de pings (Keep-Alive da API)
 
-1. Copie `CRON_SECRET` da API.
-2. [cron-job.org](https://cron-job.org) → novo job:
-   - **URL:** `https://analytic-pulse-api.onrender.com/api/cron/ping`
-   - **Intervalo:** 1 minuto
-   - **Header:** `x-cron-secret` = valor do `CRON_SECRET`
+1. Copie o valor de `CRON_SECRET` da API no Render.
+2. [cron-job.org](https://cron-job.org) → crie um novo job:
+   - **URL:** `https://sua-api-render.onrender.com/api/cron/ping`
+   - **Intervalo:** a cada 1 minuto (garante que a API execute os pings de monitoramento e **não entre em modo sleep**).
+   - **Header:** chave `x-cron-secret` = valor do seu `CRON_SECRET`
 
 #### 5. Validar
 
 | Teste | URL |
 |-------|-----|
-| Health | `https://analytic-pulse-api.onrender.com/health` |
-| Metrics | `https://analytic-pulse-api.onrender.com/metrics` |
-| App | `https://analytic-pulse-web.onrender.com` |
+| Health | `https://sua-api-render.onrender.com/health` |
+| Health DB | `https://sua-api-render.onrender.com/health/db` |
+| App (Frontend) | `https://seu-app.vercel.app` |
 
 ---
 
@@ -280,8 +264,8 @@ Create database analytic-pulse-db
 (cannot have more than one active free tier database)
 ```
 
-**Causa:** seu workspace já tem um Postgres free.  
-**Solução:** o `render.yaml` atual **não cria banco** — use Neon ou o Postgres que você já tem e informe `DATABASE_URL` no sync.
+**Causa:** Seu workspace do Render já possui um Postgres gratuito ativo.  
+**Solução:** O `render.yaml` do projeto está configurado para **não criar banco** de dados automaticamente. Reutilize o banco existente ou crie uma conta gratuita no [Neon.tech](https://neon.tech) e forneça a URL de conexão nos campos `DATABASE_URL` y `POSTGRES_URL` ao executar o blueprint.
 
 ---
 
