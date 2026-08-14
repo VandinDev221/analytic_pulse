@@ -202,7 +202,7 @@ Docs: [`docs/CLI.md`](docs/CLI.md).
 
 1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Blueprint** (ou **Manual sync** no blueprint existente).
 2. Repositório `VandinDev221/analytic_pulse`, branch `main`.
-3. Quando pedir **`DATABASE_URL`** e **`POSTGRES_URL`**, cole a **mesma** connection string obtida no Neon.
+3. Quando pedir **`DATABASE_URL`**, **`POSTGRES_URL`** e **`API_PUBLIC_URL`**, preencha os valores (no caso da API_PUBLIC_URL, coloque a URL da API que o Render gerar para você no novo serviço).
 4. Aguarde criar `analytic-pulse-api`. (O frontend `analytic-pulse-web` foi removido do render.yaml para não consumir horas grátis).
 
 #### 3. Conferir variáveis da API
@@ -213,6 +213,7 @@ Render → **analytic-pulse-api** → **Environment**:
 |----------|-------------|
 | `DATABASE_URL` | Connection string do Postgres (Neon) |
 | `POSTGRES_URL` | Igual ao `DATABASE_URL` |
+| `API_PUBLIC_URL` | URL pública da própria API no Render |
 | `JWT_SECRET` | Gerado automaticamente |
 | `CRON_SECRET` | Gerado automaticamente (use no cron-job.org) |
 | `FRONTEND_URL` | URL do frontend na Vercel (ex: `https://seu-app.vercel.app`) |

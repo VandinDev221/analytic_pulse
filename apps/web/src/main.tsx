@@ -6,7 +6,7 @@ import './style.css';
 import { init } from '@analytic-pulse/rum';
 
 init({
-  endpoint: 'https://analytic-pulse-api.onrender.com',
+  endpoint: import.meta.env.VITE_API_URL?.replace(/\/$/, '') || 'https://analytic-pulse-api.onrender.com',
   token: 'ap_rum_2JOpr7gSzi0un4UwQ-nGW5rtZXIhgzvy',
 });
 

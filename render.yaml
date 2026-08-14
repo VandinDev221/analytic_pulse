@@ -31,11 +31,11 @@ services:
       - key: CRON_SECRET
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://analytic-pulse.vercel.app,https://analytic-pulse-web.onrender.com
+        value: https://analytic-pulse.vercel.app
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: API_PUBLIC_URL
-        value: https://analytic-pulse-api.onrender.com
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
