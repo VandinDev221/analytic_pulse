@@ -29,6 +29,7 @@ import {
 } from './modules/publicapi';
 import { checkDatabase } from './infrastructure/db';
 import { registerTelegramWebhook } from './services/telegramApi';
+import { internalScheduler } from './services/internalScheduler';
 import { logger } from './observability/logger';
 import { getMetricsSnapshot, inc } from './observability/metrics';
 import swaggerUi from 'swagger-ui-express';
@@ -155,7 +156,7 @@ app.use('/api/cron', cronRouter);
 app.use('/api/status', statusRouter);
 app.use('/api/telegram', telegramRouter);
 
-app.listen(env.port, async () => {
+const server = app.listen(env.port, async () => {
   logger.info('API started', {
     port: env.port,
     env: env.nodeEnv,
@@ -172,6 +173,19 @@ app.listen(env.port, async () => {
   }
 
   await registerTelegramWebhook();
+  internalScheduler.start();
 });
+
+const shutdown = () => {
+  logger.info('Shutting down server...');
+  internalScheduler.stop();
+  server.close(() => {
+    logger.info('HTTP server closed.');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
 export default app;

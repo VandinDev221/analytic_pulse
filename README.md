@@ -240,13 +240,15 @@ Render → **analytic-pulse-api** → **Environment**:
 
 ---
 
-#### 4. Cron de pings (Keep-Alive da API)
+#### 4. Agendador Interno Automático & Keep-Alive (Sem dependência externa)
 
-1. Copie o valor de `CRON_SECRET` da API no Render.
-2. [cron-job.org](https://cron-job.org) → crie um novo job:
-   - **URL:** `https://sua-api-render.onrender.com/api/cron/ping`
-   - **Intervalo:** a cada 1 minuto (garante que a API execute os pings de monitoramento e **não entre em modo sleep**).
-   - **Header:** chave `x-cron-secret` = valor do seu `CRON_SECRET`
+A API possui um **agendador interno nativo** (`InternalScheduler`) que:
+1. **Executa o ciclo de monitoramento** de todos os monitores a cada 5 minutos (configurável via `AUTO_PING_INTERVAL_MS`).
+2. **Executa as rondas do Vigia** periodicamente.
+3. **Dispara auto-pings HTTP (`GET /health`)** para a sua própria URL pública (`API_PUBLIC_URL`), mantendo o Render acordado automaticamente.
+
+> [!NOTE]
+> O uso de serviços externos como [cron-job.org](https://cron-job.org) ou [UptimeRobot](https://uptimerobot.com) passa a ser **opcional** (podendo ser usado como redundância extra se desejar).
 
 #### 5. Validar
 

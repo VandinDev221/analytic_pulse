@@ -62,6 +62,14 @@ export const env = {
   /** Hora local (0–23) para digest diário; default 8h */
   vigiaDigestHour: Number(read('VIGIA_DIGEST_HOUR', '8') || '8'),
   vigiaMaxActionsPerHour: Number(read('VIGIA_MAX_ACTIONS_PER_HOUR', '10') || '10'),
+  /** Auto ping / scheduler interno para checagens periódicas e auto-keepalive */
+  autoPingEnabled: (read('AUTO_PING_ENABLED', 'true') || 'true').toLowerCase() !== 'false',
+  autoPingIntervalMs: Number(
+    read('AUTO_PING_INTERVAL_MS') ||
+      (Number(read('AUTO_PING_MINUTES', '5')) * 60 * 1000) ||
+      300000
+  ),
+  selfPingEnabled: (read('SELF_PING_ENABLED', 'true') || 'true').toLowerCase() !== 'false',
 } as const;
 
 export function assertCriticalEnv(): void {
