@@ -27,8 +27,8 @@ import {
   publicApiV1Router,
   openapiSpec,
 } from './modules/publicapi';
-import { checkDatabase } from './infrastructure/db';
-import { checkRedis } from './infrastructure/redis';
+import { checkDatabase, getDatabaseMetrics } from './infrastructure/db';
+import { checkRedis, getRedisMetrics } from './infrastructure/redis';
 import { registerTelegramWebhook } from './services/telegramApi';
 import { internalScheduler } from './services/internalScheduler';
 import { logger } from './observability/logger';
@@ -117,16 +117,38 @@ app.get('/health/db', async (_req, res) => {
 });
 
 app.get('/api/health', async (_req, res) => {
+  const startTime = Date.now();
   const db = await checkDatabase();
-  const redis = await checkRedis();
-  
-  const isOk = db.connected && db.schema_ready && redis.connected;
-  
+  const redisStatus = await checkRedis();
+  const latency = Date.now() - startTime;
+
+  const dbMetrics = await getDatabaseMetrics();
+  const redisMetrics = await getRedisMetrics();
+
+  const isOk = db.connected && db.schema_ready && redisStatus.connected;
+  const mem = process.memoryUsage();
+
   res.status(isOk ? 200 : 503).json({
     status: isOk ? 'ok' : 'degraded',
     timestamp: new Date().toISOString(),
-    postgres: db,
-    redis: redis
+    latency_ms: latency,
+    api: {
+      uptime_seconds: Math.floor(process.uptime()),
+      memory: {
+        rss_mb: +(mem.rss / 1024 / 1024).toFixed(2),
+        heap_used_mb: +(mem.heapUsed / 1024 / 1024).toFixed(2),
+        heap_total_mb: +(mem.heapTotal / 1024 / 1024).toFixed(2),
+      },
+      node_version: process.version,
+    },
+    postgres: {
+      ...db,
+      metrics: dbMetrics,
+    },
+    redis: {
+      ...redisStatus,
+      metrics: redisMetrics,
+    },
   });
 });
 
