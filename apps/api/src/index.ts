@@ -28,6 +28,7 @@ import {
   openapiSpec,
 } from './modules/publicapi';
 import { checkDatabase } from './infrastructure/db';
+import { checkRedis } from './infrastructure/redis';
 import { registerTelegramWebhook } from './services/telegramApi';
 import { internalScheduler } from './services/internalScheduler';
 import { logger } from './observability/logger';
@@ -113,6 +114,20 @@ app.get('/health/db', async (_req, res) => {
     });
   }
   return res.json({ status: 'ok', ...db });
+});
+
+app.get('/api/health', async (_req, res) => {
+  const db = await checkDatabase();
+  const redis = await checkRedis();
+  
+  const isOk = db.connected && db.schema_ready && redis.connected;
+  
+  res.status(isOk ? 200 : 503).json({
+    status: isOk ? 'ok' : 'degraded',
+    timestamp: new Date().toISOString(),
+    postgres: db,
+    redis: redis
+  });
 });
 
 app.get('/metrics', (_req, res) => {

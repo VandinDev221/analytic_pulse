@@ -66,6 +66,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
     { path: '/incidents', label: 'Incidentes', icon: <ShieldAlert size={18} /> },
     { path: '/alerts', label: 'Alertas', icon: <Zap size={18} /> },
     { path: '/status-page', label: 'Status Page', icon: <Globe size={18} /> },
+    { path: '/api-status', label: 'Infra Status', icon: <Activity size={18} /> },
     { path: '/docs', label: 'Docs', icon: <BookOpen size={18} /> },
   ];
 

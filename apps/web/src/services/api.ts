@@ -776,3 +776,7 @@ export async function chatWithVigia(
   const data = await res.json();
   return data.message as AssistantChatMessage;
 }
+export async function getApiHealth() {
+  const res = await fetch(`${API}/health`);
+  return res.json();
+}

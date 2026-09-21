@@ -30,6 +30,7 @@ export const env = {
   isDevelopment: nodeEnv === 'development',
   port: Number(read('PORT', '3001')),
   databaseUrl,
+  redisUrl: read('REDIS_URL'),
   jwtSecret:
     read('JWT_SECRET') ||
     (nodeEnv === 'production' ? '' : 'fallback-super-secret-key-change-me'),

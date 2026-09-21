@@ -16,6 +16,7 @@ import { AgentDetailPage } from './pages/AgentDetailPage';
 import { DockerPage } from './pages/DockerPage';
 import { KubernetesPage } from './pages/KubernetesPage';
 import { ApiKeysPage } from './pages/ApiKeysPage';
+import { ApiStatusPage } from './pages/ApiStatusPage';
 import { DocsPage } from './pages/DocsPage';
 import { RumPage } from './pages/RumPage';
 import { VigiaPage } from './pages/VigiaPage';
@@ -236,6 +237,14 @@ function App() {
           element={
             user
               ? <AppLayout userSlug={userSlug}><StatusPageSettingsPage /></AppLayout>
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/api-status"
+          element={
+            user
+              ? <AppLayout userSlug={userSlug}><ApiStatusPage /></AppLayout>
               : <Navigate to="/login" replace />
           }
         />
