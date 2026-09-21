@@ -4,7 +4,10 @@ import os from 'os';
 import { promisify } from 'util';
 import type { AgentMetricsPayload } from '@analytic-pulse/shared';
 
-const execFileAsync = promisify(execFile);
+const execFilePromisified = promisify(execFile);
+const execFileAsync = (file: string, args?: readonly string[] | null, options?: any): Promise<{ stdout: string; stderr: string }> => {
+  return (execFilePromisified(file, args, { windowsHide: true, encoding: 'utf8', ...options }) as unknown) as Promise<{ stdout: string; stderr: string }>;
+};
 
 function readFileSafe(path: string): string | null {
   try {
