@@ -1,0 +1,27 @@
+{
+  "name": "PingPulse — Uptime & Infrastructure Monitor",
+  "short_name": "PingPulse",
+  "description": "Monitore a disponibilidade dos seus serviços em tempo real com alertas, gráficos de latência e páginas de status.",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/"
+}
