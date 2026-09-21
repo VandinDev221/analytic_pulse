@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ShieldCheck, Database, Server, RefreshCw, Activity, HardDrive, Cpu, Clock, Layers, Zap } from 'lucide-react';
+import { ShieldCheck, Database, Server, RefreshCw, Cpu, HardDrive, Zap, AlertCircle } from 'lucide-react';
 import { getApiHealth } from '../services/api';
 
 interface HealthData {
@@ -63,9 +63,9 @@ function formatUptime(seconds: number): string {
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  if (d > 0) return d + 'd ' + h + 'h ' + m + 'm';
-  if (h > 0) return h + 'h ' + m + 'm';
-  return m + 'm';
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
 }
 
 function formatNumber(n: number): string {
@@ -78,15 +78,15 @@ function StatusBadge({ ok, labelOk, labelFail }: { ok: boolean; labelOk: string;
   const cls = ok
     ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
     : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-  return <span className={'px-2 py-1 text-xs font-medium rounded-full ' + cls}>{ok ? labelOk : labelFail}</span>;
+  return <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${cls}`}>{ok ? labelOk : labelFail}</span>;
 }
 
 function MetricRow({ label, value, unit }: { label: string; value: string | number | null | undefined; unit?: string }) {
   if (value === null || value === undefined) return null;
   return (
-    <div className="flex items-center justify-between py-1.5">
+    <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
       <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
-      <span className="text-sm font-medium text-gray-900 dark:text-white">
+      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
         {value}{unit ? ' ' + unit : ''}
       </span>
     </div>
@@ -96,8 +96,8 @@ function MetricRow({ label, value, unit }: { label: string; value: string | numb
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
-    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-      <div className={'h-2 rounded-full ' + color} style={{ width: pct + '%' }} />
+    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1.5 overflow-hidden">
+      <div className={`h-2 rounded-full transition-all duration-500 ${color}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -120,12 +120,17 @@ export function ApiStatusPage() {
 
   useEffect(() => {
     fetchHealth();
-    const interval = setInterval(fetchHealth, 30000);
+    const interval = setInterval(fetchHealth, 15000);
     return () => clearInterval(interval);
   }, []);
 
   if (loading && !health) {
-    return <div className="p-8 text-center text-gray-500">Verificando status da API...</div>;
+    return (
+      <div className="p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
+        <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
+        <p className="text-sm font-medium text-gray-500">Conectando aos serviços de infraestrutura...</p>
+      </div>
+    );
   }
 
   const isOk = health?.status === 'ok';
@@ -138,75 +143,118 @@ export function ApiStatusPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Status da Infraestrutura</h1>
-          <p className="text-sm text-gray-500">Monitoramento em tempo real — atualiza a cada 30s</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            Status & Consumo da Infraestrutura
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Monitoramento em tempo real do Backend (Node.js), PostgreSQL (Neon) e Redis Cloud
+          </p>
         </div>
         <button
           onClick={fetchHealth}
-          className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+          className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-200"
         >
-          <RefreshCw className={'w-5 h-5 text-gray-600 dark:text-gray-300' + (loading ? ' animate-spin' : '')} />
+          <RefreshCw className={`w-4 h-4 text-indigo-500 ${loading ? 'animate-spin' : ''}`} />
+          Atualizar
         </button>
       </div>
 
-      {/* Status Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Server className="w-5 h-5 text-blue-500" /> API Server
-            </h3>
-            <StatusBadge ok={isOk} labelOk="Online" labelFail="Degraded" />
+      {/* Warning Banner if Redis is not configured */}
+      {rd && !rd.connected && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-4 flex items-start gap-3 text-amber-800 dark:text-amber-300">
+          <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-xs space-y-1">
+            <p className="font-semibold text-sm">Redis Cloud não conectado</p>
+            <p>
+              A variável <code className="bg-amber-100 dark:bg-amber-900/60 px-1.5 py-0.5 rounded font-mono">REDIS_URL</code> precisa ser adicionada no painel de ambiente do seu **Backend** (Render / Vercel API).
+            </p>
+            <p className="text-amber-700 dark:text-amber-400 font-mono text-[11px] pt-1">
+              Valor: redis://default:cOle4nmtBoZ6Z4TdDLqS7Hx18kXymlks@eye-tender-stellar-50628.db.redis.io:14433
+            </p>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {health?.timestamp ? new Date(health.timestamp).toLocaleString() : 'N/A'}
-          </p>
-          {health?.latency_ms !== undefined && (
-            <p className="text-xs text-gray-400 mt-1">Latência: {health.latency_ms}ms</p>
+        </div>
+      )}
+
+      {/* Main Status Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* API Server */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
+                <Server className="w-4 h-4 text-blue-500" /> API Server
+              </h3>
+              <StatusBadge ok={isOk} labelOk="Online" labelFail="Degraded" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Última checagem: {health?.timestamp ? new Date(health.timestamp).toLocaleTimeString() : 'N/A'}
+            </p>
+            {health?.latency_ms !== undefined && (
+              <p className="text-xs text-indigo-500 font-medium mt-1">
+                Latência de resposta: {health.latency_ms} ms
+              </p>
+            )}
+          </div>
+          {health?.error && (
+            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 p-2 rounded mt-3">{health.error}</p>
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Database className="w-5 h-5 text-purple-500" /> PostgreSQL
-            </h3>
-            <StatusBadge ok={pg?.connected ?? false} labelOk="Connected" labelFail="Disconnected" />
+        {/* PostgreSQL */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
+                <Database className="w-4 h-4 text-purple-500" /> PostgreSQL (Neon)
+              </h3>
+              <StatusBadge ok={pg?.connected ?? false} labelOk="Conectado" labelFail="Desconectado" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {pg?.connected && pg?.schema_ready ? 'Schema do Banco OK' : pg?.error || 'Verificando tabela users...'}
+            </p>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {pg?.connected && pg?.schema_ready ? 'Schema OK' : pg?.error || 'Schema pendente'}
-          </p>
+          {pg?.error && (
+            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 p-2 rounded mt-3">{pg.error}</p>
+          )}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-red-500" /> Redis Cloud
-            </h3>
-            <StatusBadge ok={rd?.connected ?? false} labelOk="Connected" labelFail="Disconnected" />
+        {/* Redis Cloud */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
+                <ShieldCheck className="w-4 h-4 text-rose-500" /> Redis Cloud
+              </h3>
+              <StatusBadge ok={rd?.connected ?? false} labelOk="Conectado" labelFail="Desconectado" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {rd?.connected ? 'Cache de memória ativo' : rd?.error || 'Aguardando configuração...'}
+            </p>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {rd?.connected ? 'Cache ativo' : rd?.error || 'Cache inativo'}
-          </p>
+          {rd?.error && (
+            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 p-2 rounded mt-3">{rd.error}</p>
+          )}
         </div>
       </div>
 
-      {/* Detailed Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Detailed Metrics Section */}
+      <h2 className="text-lg font-bold text-gray-800 dark:text-white pt-2">Métricas de Consumo & Performance</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* API Metrics */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-            <Cpu className="w-4 h-4 text-blue-500" /> API — Consumo
+          <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700 text-sm">
+            <Cpu className="w-4 h-4 text-blue-500" /> API — Consumo de Recursos
           </h3>
           {api ? (
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              <MetricRow label="Uptime" value={formatUptime(api.uptime_seconds)} />
-              <MetricRow label="Node.js" value={api.node_version} />
-              <MetricRow label="RSS Memory" value={api.memory.rss_mb} unit="MB" />
-              <div className="py-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Heap</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+            <div>
+              <MetricRow label="Tempo Ativo (Uptime)" value={formatUptime(api.uptime_seconds)} />
+              <MetricRow label="Versão do Node.js" value={api.node_version} />
+              <MetricRow label="Memória RSS Total" value={api.memory.rss_mb} unit="MB" />
+              <div className="py-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 dark:text-gray-400">Memória Heap em Uso</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
                     {api.memory.heap_used_mb} / {api.memory.heap_total_mb} MB
                   </span>
                 </div>
@@ -214,68 +262,83 @@ export function ApiStatusPage() {
               </div>
             </div>
           ) : (
-            <p className="text-xs text-gray-400">Sem dados</p>
+            <div className="text-xs text-gray-400 py-4 text-center">
+              Métricas detalhadas da API disponíveis assim que o backend for atualizado no servidor.
+            </div>
           )}
         </div>
 
         {/* PostgreSQL Metrics */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-            <HardDrive className="w-4 h-4 text-purple-500" /> PostgreSQL — Consumo
+          <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700 text-sm">
+            <HardDrive className="w-4 h-4 text-purple-500" /> PostgreSQL — Armazenamento
           </h3>
           {pg?.metrics ? (
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              <MetricRow label="Tamanho do DB" value={pg.metrics.size.pretty} />
-              <MetricRow label="Tabelas" value={pg.metrics.tables} />
-              <MetricRow label="Conexões ativas" value={pg.metrics.connections.active} />
-              <MetricRow label="Conexões idle" value={pg.metrics.connections.idle} />
-              <MetricRow label="Pool (usado/total)" value={pg.metrics.connections.pool_total - pg.metrics.connections.pool_idle + ' / ' + pg.metrics.connections.pool_total} />
+            <div>
+              <MetricRow label="Tamanho do Banco" value={pg.metrics.size.pretty} />
+              <MetricRow label="Total de Tabelas" value={pg.metrics.tables} />
+              <MetricRow label="Conexões Ativas" value={pg.metrics.connections.active} />
+              <MetricRow label="Conexões Idle (Espera)" value={pg.metrics.connections.idle} />
+              <MetricRow 
+                label="Pool de Conexões" 
+                value={`${pg.metrics.connections.pool_total - pg.metrics.connections.pool_idle} / ${pg.metrics.connections.pool_total}`} 
+              />
               {pg.metrics.top_tables.length > 0 && (
-                <div className="py-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Top Tabelas</span>
-                  {pg.metrics.top_tables.slice(0, 5).map((t) => (
-                    <div key={t.name} className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-gray-600 dark:text-gray-300 font-mono">{t.name}</span>
-                      <span className="text-xs text-gray-500">{formatNumber(t.rows)} rows</span>
-                    </div>
-                  ))}
+                <div className="pt-2">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Principais Tabelas</span>
+                  <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                    {pg.metrics.top_tables.slice(0, 5).map((t) => (
+                      <div key={t.name} className="flex items-center justify-between text-xs py-0.5">
+                        <span className="text-gray-600 dark:text-gray-300 font-mono">{t.name}</span>
+                        <span className="text-gray-400">{formatNumber(t.rows)} registros</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-xs text-gray-400">{pg?.connected ? 'Carregando...' : 'Indisponível'}</p>
+            <div className="text-xs text-gray-400 py-4 text-center">
+              {pg?.connected 
+                ? 'Conectado ao Neon. Métricas avançadas aguardando deploy do backend.' 
+                : 'Banco de dados desconectado.'}
+            </div>
           )}
         </div>
 
         {/* Redis Metrics */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-            <Zap className="w-4 h-4 text-red-500" /> Redis — Consumo
+          <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700 text-sm">
+            <Zap className="w-4 h-4 text-rose-500" /> Redis — Memória & Chaves
           </h3>
           {rd?.metrics ? (
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              <div className="py-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Memória</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+            <div>
+              <div className="py-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 dark:text-gray-400">Memória em Uso</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
                     {rd.metrics.memory.used_mb} MB
-                    {rd.metrics.memory.max_mb ? ' / ' + rd.metrics.memory.max_mb + ' MB' : ''}
+                    {rd.metrics.memory.max_mb ? ` / ${rd.metrics.memory.max_mb} MB` : ''}
                   </span>
                 </div>
                 {rd.metrics.memory.max_mb && (
-                  <ProgressBar value={rd.metrics.memory.used_mb} max={rd.metrics.memory.max_mb} color="bg-red-500" />
+                  <ProgressBar value={rd.metrics.memory.used_mb} max={rd.metrics.memory.max_mb} color="bg-rose-500" />
                 )}
               </div>
-              <MetricRow label="Chaves" value={rd.metrics.stats.total_keys} />
-              <MetricRow label="Ops/seg" value={rd.metrics.stats.ops_per_sec} />
-              <MetricRow label="Comandos totais" value={formatNumber(rd.metrics.stats.total_commands)} />
-              <MetricRow label="Hit Rate" value={rd.metrics.stats.hit_rate !== null ? rd.metrics.stats.hit_rate + '%' : 'N/A'} />
-              <MetricRow label="Clientes conectados" value={rd.metrics.clients.connected} />
-              <MetricRow label="Versão" value={rd.metrics.server.version} />
-              <MetricRow label="Uptime" value={formatUptime(rd.metrics.server.uptime_seconds)} />
+              <MetricRow label="Total de Chaves (Keys)" value={rd.metrics.stats.total_keys} />
+              <MetricRow label="Operações por Segundo" value={rd.metrics.stats.ops_per_sec} />
+              <MetricRow label="Comandos Processados" value={formatNumber(rd.metrics.stats.total_commands)} />
+              <MetricRow label="Taxa de Acertos (Hit Rate)" value={rd.metrics.stats.hit_rate !== null ? `${rd.metrics.stats.hit_rate}%` : 'N/A'} />
+              <MetricRow label="Clientes Conectados" value={rd.metrics.clients.connected} />
+              <MetricRow label="Versão do Redis" value={rd.metrics.server.version} />
+              <MetricRow label="Tempo Ativo (Uptime)" value={formatUptime(rd.metrics.server.uptime_seconds)} />
             </div>
           ) : (
-            <p className="text-xs text-gray-400">{rd?.connected ? 'Carregando...' : 'Indisponível'}</p>
+            <div className="text-xs text-gray-400 py-4 text-center">
+              {rd?.connected 
+                ? 'Conectado ao Redis. Métricas aguardando resposta.' 
+                : 'Redis Cloud desconectado. Adicione a REDIS_URL para habilitar.'}
+            </div>
           )}
         </div>
       </div>
