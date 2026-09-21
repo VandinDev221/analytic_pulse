@@ -31,6 +31,7 @@ export const env = {
   port: Number(read('PORT', '3001')),
   databaseUrl,
   redisUrl: read('REDIS_URL'),
+  redisUrl2: read('REDIS_URL_2'),
   jwtSecret:
     read('JWT_SECRET') ||
     (nodeEnv === 'production' ? '' : 'fallback-super-secret-key-change-me'),

@@ -3,40 +3,44 @@ import { env } from '../config/env';
 import { logger } from '../observability/logger';
 
 export let redis: Redis | null = null;
+export let redis2: Redis | null = null;
 
-if (env.redisUrl) {
+function createRedisClient(url: string | undefined, name: string): Redis | null {
+  if (!url) return null;
   try {
-    redis = new Redis(env.redisUrl, {
+    const client = new Redis(url, {
       maxRetriesPerRequest: 3,
       retryStrategy(times) {
-        if (times > 3) {
-          return null;
-        }
+        if (times > 3) return null;
         return Math.min(times * 100, 3000);
       }
     });
 
-    redis.on('error', (err) => {
-      logger.error('Redis connection error', { error: err.message });
+    client.on('error', (err) => {
+      logger.error(`${name} connection error`, { error: err.message });
     });
 
-    redis.on('connect', () => {
-      logger.info('Connected to Redis successfully');
+    client.on('connect', () => {
+      logger.info(`Connected to ${name} successfully`);
     });
+
+    return client;
   } catch (error) {
-    logger.error('Failed to initialize Redis', { error });
+    logger.error(`Failed to initialize ${name}`, { error });
+    return null;
   }
-} else {
-  logger.warn('REDIS_URL not configured. Redis features will be disabled.');
 }
 
-export async function checkRedis(): Promise<{ connected: boolean; error?: string }> {
-  if (!redis) {
-    return { connected: false, error: 'REDIS_URL not configured' };
+redis = createRedisClient(env.redisUrl, 'Redis Primary');
+redis2 = createRedisClient(env.redisUrl2, 'Redis Secondary');
+
+export async function checkRedis(client: Redis | null = redis, envName = 'REDIS_URL'): Promise<{ connected: boolean; error?: string }> {
+  if (!client) {
+    return { connected: false, error: `${envName} not configured` };
   }
 
   try {
-    await redis.ping();
+    await client.ping();
     return { connected: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown Redis error';
@@ -44,13 +48,13 @@ export async function checkRedis(): Promise<{ connected: boolean; error?: string
   }
 }
 
-export async function getRedisMetrics() {
-  if (!redis) {
+export async function getRedisMetrics(client: Redis | null = redis) {
+  if (!client) {
     return null;
   }
 
   try {
-    const info = await redis.info();
+    const info = await client.info();
     const parse = (key: string): string | null => {
       const regex = new RegExp('^' + key + ':(.+)$', 'm');
       const match = info.match(regex);
@@ -61,13 +65,11 @@ export async function getRedisMetrics() {
     let maxMemory = Number(parse('maxmemory') || 0);
     const peakMemory = Number(parse('used_memory_peak') || 0);
 
-    // No Redis Cloud Free Tier, o maxmemory não vem no INFO memory (é gerido pela cota da subscrição de 30MB).
-    // Se maxmemory for 0, usamos 30MB (31457280 bytes) como limite padrão do plano gratuito do Redis Cloud.
     if (maxMemory === 0) {
       maxMemory = 30 * 1024 * 1024;
     }
 
-    const totalKeys = await redis.dbsize();
+    const totalKeys = await client.dbsize();
 
     const hits = Number(parse('keyspace_hits') || 0);
     const misses = Number(parse('keyspace_misses') || 0);

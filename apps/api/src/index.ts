@@ -28,7 +28,7 @@ import {
   openapiSpec,
 } from './modules/publicapi';
 import { checkDatabase, getDatabaseMetrics } from './infrastructure/db';
-import { checkRedis, getRedisMetrics } from './infrastructure/redis';
+import { checkRedis, getRedisMetrics, redis2 } from './infrastructure/redis';
 import { registerTelegramWebhook } from './services/telegramApi';
 import { internalScheduler } from './services/internalScheduler';
 import { logger } from './observability/logger';
@@ -120,12 +120,14 @@ app.get('/api/health', async (_req, res) => {
   const startTime = Date.now();
   const db = await checkDatabase();
   const redisStatus = await checkRedis();
+  const redis2Status = await checkRedis(redis2, 'REDIS_URL_2');
   const latency = Date.now() - startTime;
 
   const dbMetrics = await getDatabaseMetrics();
   const redisMetrics = await getRedisMetrics();
+  const redis2Metrics = await getRedisMetrics(redis2);
 
-  const isOk = db.connected && db.schema_ready && redisStatus.connected;
+  const isOk = db.connected && db.schema_ready && (redisStatus.connected || redis2Status.connected);
   const mem = process.memoryUsage();
 
   res.status(isOk ? 200 : 503).json({
@@ -148,6 +150,10 @@ app.get('/api/health', async (_req, res) => {
     redis: {
       ...redisStatus,
       metrics: redisMetrics,
+    },
+    redis2: {
+      ...redis2Status,
+      metrics: redis2Metrics,
     },
   });
 });
