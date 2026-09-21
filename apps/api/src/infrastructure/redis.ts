@@ -58,7 +58,15 @@ export async function getRedisMetrics() {
     };
 
     const usedMemory = Number(parse('used_memory') || 0);
-    const maxMemory = Number(parse('maxmemory') || 0);
+    let maxMemory = Number(parse('maxmemory') || 0);
+    const peakMemory = Number(parse('used_memory_peak') || 0);
+
+    // No Redis Cloud Free Tier, o maxmemory não vem no INFO memory (é gerido pela cota da subscrição de 30MB).
+    // Se maxmemory for 0, usamos 30MB (31457280 bytes) como limite padrão do plano gratuito do Redis Cloud.
+    if (maxMemory === 0) {
+      maxMemory = 30 * 1024 * 1024;
+    }
+
     const totalKeys = await redis.dbsize();
 
     const hits = Number(parse('keyspace_hits') || 0);
@@ -68,9 +76,10 @@ export async function getRedisMetrics() {
     return {
       memory: {
         used_bytes: usedMemory,
-        used_mb: +(usedMemory / 1024 / 1024).toFixed(2),
+        used_mb: +(usedMemory / 1024 / 1024).toFixed(1),
+        peak_mb: +(peakMemory / 1024 / 1024).toFixed(1),
         max_bytes: maxMemory,
-        max_mb: maxMemory > 0 ? +(maxMemory / 1024 / 1024).toFixed(2) : null,
+        max_mb: +(maxMemory / 1024 / 1024).toFixed(0),
         usage_pct: maxMemory > 0 ? +((usedMemory / maxMemory) * 100).toFixed(1) : null,
       },
       clients: {
