@@ -101,7 +101,10 @@ export const AppLayout: React.FC<LayoutProps> = ({ children, userSlug }) => {
           <a
             key={item.path}
             className={`nav-item ${active ? 'active' : ''}`}
-            onClick={() => navigate(item.path)}
+            onClick={() => {
+              navigate(item.path);
+              setMenuOpen(false);
+            }}
             style={{ cursor: 'pointer' }}
           >
             {item.icon}
